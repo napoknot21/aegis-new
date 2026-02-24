@@ -10,7 +10,12 @@ router = APIRouter(prefix="/api/v1/subred", tags=["SubRed / AUM"])
 def get_aum (
     
         service: SubredServiceDep,
-        date: str = Query(..., example="2025-01-15"),
+        date: str = Query(..., openapi_examples={
+            "default": {
+                "summary": "Example date",
+                "value": "2025-01-15"
+            }
+        }),
         force_refresh: bool = Query(False),
     
     ) :

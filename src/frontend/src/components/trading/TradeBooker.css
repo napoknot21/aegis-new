@@ -1,0 +1,110 @@
+.booker-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.booker-header {
+  margin-bottom: 32px;
+}
+
+.booker-header h2 {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.trade-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-section {
+  padding: 24px;
+}
+
+.form-section h3 {
+  font-size: 16px;
+  color: var(--text-primary);
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+/* Floating Label Magic */
+.floating-group {
+  position: relative;
+  width: 100%;
+}
+
+.floating-input,
+.floating-select {
+  width: 100%;
+  padding: 18px 14px 6px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.floating-select {
+  cursor: pointer;
+}
+
+.floating-input:focus,
+.floating-select:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  background-color: var(--bg-secondary);
+}
+
+.floating-label {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  color: var(--text-muted);
+  font-size: 14px;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  transform-origin: left top;
+}
+
+/* Float the label when focused or not empty ("placeholder-shown" trick) */
+.floating-input:focus ~ .floating-label,
+.floating-input:not(:placeholder-shown) ~ .floating-label,
+.floating-select:focus ~ .floating-label,
+.floating-select:valid ~ .floating-label {
+  transform: translateY(-8px) scale(0.8);
+  color: var(--accent-color);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  padding-top: 16px;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}

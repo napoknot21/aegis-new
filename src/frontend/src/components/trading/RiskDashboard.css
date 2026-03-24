@@ -1,0 +1,38 @@
+.risk-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+}
+
+.chart-box {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  height: 400px; /* Force consistent heights for plots */
+}
+
+.chart-box h3 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.risk-limits {
+  padding: 24px;
+  margin-top: 16px;
+}
+
+.risk-limits h3 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+/* Re-use data-table from DataViewer via global scope if possible, 
+   but it was scoped mostly by classes so it works here automatically */

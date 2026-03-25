@@ -4,7 +4,7 @@ const SUB_TABS = [
   { name: 'Booker', path: 'booker' },
   { name: 'Data Viewer', path: 'viewer' },
   { name: 'Checker', path: 'checker' },
-  { name: 'Risks', path: 'risks' },
+  { name: 'Controls', path: 'controls' },
 ];
 
 export default function TopNav() {

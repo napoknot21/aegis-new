@@ -3,7 +3,7 @@ import TopNav from '../components/TopNav';
 import TradeBooker from '../components/trading/TradeBooker';
 import DataViewer from '../components/trading/DataViewer';
 import TradeChecker from '../components/trading/TradeChecker';
-import RiskDashboard from '../components/trading/RiskDashboard';
+import ControlsDashboard from '../components/trading/ControlsDashboard';
 
 export default function TradingDashboard() {
   return (
@@ -23,7 +23,7 @@ export default function TradingDashboard() {
           <Route path="booker" element={<TradeBooker />} />
           <Route path="viewer" element={<DataViewer />} />
           <Route path="checker" element={<TradeChecker />} />
-          <Route path="risks" element={<RiskDashboard />} />
+          <Route path="controls" element={<ControlsDashboard />} />
         </Routes>
       </div>
     </div>

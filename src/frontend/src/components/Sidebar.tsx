@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { Activity, ShieldCheck, Microscope, Cpu, Users, Briefcase } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useAppStore } from '../store/appStore';
+import { useThemeStore } from '../store/themeStore';
 import { fetchFunds } from '../services/tradeService';
 import './Sidebar.css';
 
@@ -17,6 +18,7 @@ const TABS = [
 
 export default function Sidebar() {
   const { selectedFund, globalDate, setSelectedFund, setGlobalDate } = useAppStore();
+  const { theme } = useThemeStore();
   const [funds, setFunds] = useState<any[]>([]);
 
   useEffect(() => {
@@ -30,8 +32,12 @@ export default function Sidebar() {
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-header">
-        <h2 className="brand">AEGIS</h2>
+      <div className="sidebar-header" style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
+        <img 
+          src={theme === 'light' || theme === 'white' ? '/heroics_aegis_log_white.png' : '/heroics_aegis_logo.png'} 
+          alt="AEGIS Logo" 
+          style={{ height: '32px', objectFit: 'contain' }} 
+        />
       </div>
       
       <div className="sidebar-filters">

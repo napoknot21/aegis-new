@@ -6,11 +6,40 @@
   display: flex;
   flex-direction: column;
   transition: all 0.3s ease;
+  position: relative;
+}
+
+.sidebar.collapsed {
+  width: 80px;
+}
+
+.collapse-toggle {
+  position: absolute;
+  top: 32px;
+  right: -16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 50;
+  transition: all 0.2s ease;
+}
+
+.collapse-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .sidebar-header {
   padding: 24px;
   border-bottom: 1px solid var(--border-color);
+  transition: padding 0.3s ease;
 }
 
 .brand {
@@ -78,6 +107,13 @@
   color: var(--text-secondary);
   font-weight: 500;
   transition: all 0.2s ease;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sidebar.collapsed .nav-link {
+  padding: 12px;
+  justify-content: center;
 }
 
 .nav-link:hover {

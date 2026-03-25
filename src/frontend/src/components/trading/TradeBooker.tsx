@@ -140,8 +140,32 @@ export default function TradeBooker() {
   return (
     <div className="booker-container fade-in">
       <div className="booker-header">
-        <h2>Book New Trade</h2>
-        <p>Enter the specifics. Data saved across trade_disc, trade_disc_legs, instruments and premiums.</p>
+        <h2>Trade Booker</h2>
+        <p>Hedge fund trade booking form.</p>
+      </div>
+
+      <div style={{ display: 'flex', gap: '20px', marginBottom: '24px' }}>
+        <div 
+          className="glass-panel" 
+          style={{ flex: 1, padding: '32px 24px', textAlign: 'center', borderStyle: 'dashed', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+          onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--accent-color)'}
+          onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
+        >
+          <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 500 }}>Drop trade confirmation file</h4>
+          <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)' }}>Drag and drop file here</p>
+          <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>Limit 200MB per file • CSV, TXT, XLSX, PDF, MSG, PNG, JPG, JPEG</p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)', fontWeight: 500 }}>
+          OR
+        </div>
+        <div className="glass-panel" style={{ flex: 1, padding: '24px', display: 'flex', flexDirection: 'column' }}>
+          <h4 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: 500 }}>Drop trade text input</h4>
+          <textarea 
+            placeholder="Paste trade text here..." 
+            className="form-control"
+            style={{ flex: 1, minHeight: '80px', padding: '12px', resize: 'none' }}
+          ></textarea>
+        </div>
       </div>
 
       <form className="trade-form" onSubmit={handleSubmit}>
@@ -272,8 +296,14 @@ export default function TradeBooker() {
 
         {/* Instruments Reference Section */}
         <section className="form-section glass-panel">
-          <h3>Instrument Details</h3>
-          <div className="form-grid">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0 }}>Instrument Details</h3>
+            <span style={{ fontSize: '12px', color: 'var(--warning)', background: 'rgba(245, 158, 11, 0.1)', padding: '6px 12px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+              Instrument Name is mandatory. Please type instrument name (for Instrument details)
+            </span>
+          </div>
+          <div className="form-grid" style={{ marginTop: 0 }}>
             <div className="floating-group">
               <input type="text" id="instrument_code" className="floating-input" placeholder=" " value={formData.instrument_code} onChange={handleChange} />
               <label htmlFor="instrument_code" className="floating-label">Instrument Code</label>

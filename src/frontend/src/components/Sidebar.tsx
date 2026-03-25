@@ -33,27 +33,27 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-header" style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
-        <img 
-          src={theme === 'light' || theme === 'white' ? '/heroics_aegis_log_white.png' : '/heroics_aegis_logo.png'} 
-          alt="AEGIS Logo" 
-          style={{ height: '32px', objectFit: 'contain' }} 
+        <img
+          src={theme === 'light' || theme === 'white' ? '/heroics_aegis_logo.png' : '/heroics_aegis_logo_white.png'}
+          alt="AEGIS Logo"
+          style={{ height: '32px', objectFit: 'contain' }}
         />
       </div>
-      
+
       <div className="sidebar-filters">
         <div className="filter-group">
           <label>Date</label>
-          <input 
-            type="date" 
-            value={globalDate} 
-            onChange={(e) => setGlobalDate(e.target.value)} 
+          <input
+            type="date"
+            value={globalDate}
+            onChange={(e) => setGlobalDate(e.target.value)}
             className="sidebar-input"
           />
         </div>
         <div className="filter-group">
           <label>Fund</label>
-          <select 
-            value={selectedFund || ''} 
+          <select
+            value={selectedFund || ''}
             onChange={(e) => setSelectedFund(parseInt(e.target.value))}
             className="sidebar-input"
           >
@@ -63,12 +63,12 @@ export default function Sidebar() {
           </select>
         </div>
       </div>
-      
+
       <nav className="nav-menu">
         {TABS.map((tab) => (
-          <NavLink 
-            key={tab.name} 
-            to={tab.path} 
+          <NavLink
+            key={tab.name}
+            to={tab.path}
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
           >
             <tab.icon size={20} className="nav-icon" />

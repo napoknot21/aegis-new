@@ -78,7 +78,7 @@ export default function ControlsDashboard() {
                     line: { shape: 'spline', color: '#3b82f6', width: 3 },
                   },
                 ]}
-                layout={{ ...layoutTpl, height: 300, width: undefined, autosize: true, title: 'Historical VaR' }}
+                layout={{ ...layoutTpl, height: 300, autosize: true, title: { text: 'Historical VaR' } }}
                 useResizeHandler={true}
                 style={{ width: '100%', height: '100%' }}
               />
@@ -93,7 +93,7 @@ export default function ControlsDashboard() {
                     marker: { color: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'] }
                   },
                 ]}
-                layout={{ ...layoutTpl, height: 300, width: undefined, autosize: true, title: 'SIMM Exposure' }}
+                layout={{ ...layoutTpl, height: 300, autosize: true, title: { text: 'SIMM Exposure' } }}
                 useResizeHandler={true}
                 style={{ width: '100%', height: '100%' }}
               />

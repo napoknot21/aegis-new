@@ -1,20 +1,21 @@
-import { useMsal } from '@azure/msal-react';
-import { loginRequest } from '../authConfig';
-import { ShieldCheck } from 'lucide-react';
+// import { useMsal } from '@azure/msal-react';
+// import { loginRequest } from '../authConfig';
+// import { ShieldCheck } from 'lucide-react';
 
 export default function LoginPage() {
-  const { instance } = useMsal();
+  // const { instance } = useMsal();
 
   const handleLogin = () => {
-    instance.loginRedirect(loginRequest).catch(e => {
-      console.error(e);
-    });
+    // instance.loginRedirect(loginRequest).catch((e: any) => {
+    //   console.error(e);
+    // });
+    console.log('Login disabled for now');
   };
 
   return (
     <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)' }}>
       <div className="glass-panel fade-in" style={{ padding: '48px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '400px' }}>
-        <ShieldCheck size={48} color="var(--accent-color)" style={{ marginBottom: '24px' }} />
+        <div style={{ marginBottom: '24px', fontSize: '48px' }}>🛡️</div>
         <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 600 }}>AEGIS System</h2>
         <p style={{ margin: '0 0 32px 0', color: 'var(--text-secondary)', textAlign: 'center' }}>Hedge Fund Management & Controls</p>
         

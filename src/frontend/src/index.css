@@ -1,60 +1,93 @@
-@import url('https://fonts.cdnfonts.com/css/pp-mori');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+
+@font-face {
+  font-family: 'PP Mori';
+  src: url('/fonts/PPMori-Regular.woff2') format('woff2'),
+       url('/fonts/PPMori-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'PP Mori';
+  src: url('/fonts/PPMori-Medium.woff2') format('woff2'),
+       url('/fonts/PPMori-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'PP Mori';
+  src: url('/fonts/PPMori-SemiBold.woff2') format('woff2'),
+       url('/fonts/PPMori-SemiBold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'PP Mori';
+  src: url('/fonts/PPMori-Bold.woff2') format('woff2'),
+       url('/fonts/PPMori-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+}
 
 :root {
-  /* Default: Deep Premium Dark */
-  --bg-primary: #050507;
-  --bg-secondary: rgba(20, 22, 28, 0.6);
-  --bg-tertiary: rgba(30, 33, 40, 0.8);
-  --bg-hover: rgba(255, 255, 255, 0.05);
+  /* Default: Deep Blue Dark Theme */
+  --bg-primary: #061237; /* Deep Blue PMS 282 C */
+  --bg-secondary: rgba(6, 18, 55, 0.8);
+  --bg-tertiary: rgba(57, 114, 229, 0.15); /* Blue hour hint */
+  --bg-hover: rgba(230, 231, 235, 0.1); /* Mist */
   
-  --text-primary: #ffffff;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
+  --text-primary: #ffffff; /* Light */
+  --text-secondary: #e6e7eb; /* Mist PMS 649 C */
+  --text-muted: rgba(230, 231, 235, 0.6);
   
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(255, 255, 255, 0.2);
+  --border-color: rgba(230, 231, 235, 0.15);
+  --border-hover: rgba(230, 231, 235, 0.3);
   
-  --accent-color: #3b82f6; 
-  --accent-hover: #60a5fa;
+  --accent-color: #3972E5; /* Blue hour PMS 2727 C */
+  --accent-hover: #5A8DF0;
   --danger: #ef4444;
-  --success: #10b981;
-  --warning: #f59e0b;
+  --success: #20E0D5; /* Global strategy / Cyan PMS 319 C */
+  --warning: #FFAB48; /* Family partners / Orange PMS 150 C */
   
-  --glow: 0 0 40px -10px rgba(59, 130, 246, 0.3);
-  --font-mori: 'PP Mori', system-ui, -apple-system, sans-serif;
+  --glow: 0 0 40px -10px rgba(32, 224, 213, 0.3); /* Cyan glow */
+  --font-mori: 'PP Mori', 'DM Sans', system-ui, -apple-system, sans-serif;
 }
 
 [data-theme='light'] {
   --bg-primary: #f8fafc;
-  --bg-secondary: rgba(255, 255, 255, 0.9);
-  --bg-tertiary: rgba(241, 245, 249, 0.8);
-  --bg-hover: rgba(0, 0, 0, 0.03);
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #E6E7EB; /* Mist */
+  --bg-hover: rgba(57, 114, 229, 0.08);
   
-  --text-primary: #0f172a;
+  --text-primary: #061237; /* Deep Blue */
   --text-secondary: #475569;
   --text-muted: #94a3b8;
   
-  --border-color: rgba(0, 0, 0, 0.08);
-  --border-hover: rgba(0, 0, 0, 0.15);
+  --border-color: #E6E7EB; /* Mist */
+  --border-hover: #cbd5e1;
   
-  --accent-color: #2563eb;
+  --accent-color: #3972E5; /* Blue hour */
   --accent-hover: #1d4ed8;
   
-  --glow: 0 10px 30px -10px rgba(37, 99, 235, 0.2);
+  --glow: 0 10px 30px -10px rgba(57, 114, 229, 0.2);
 }
 
 [data-theme='white'] {
   --bg-primary: #ffffff;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #f8fafc;
+  --bg-tertiary: #E6E7EB; /* Mist */
   --bg-hover: #f1f5f9;
-  --text-primary: #000000;
+  
+  --text-primary: #061237; /* Deep Blue */
   --text-secondary: #334155;
   --text-muted: #64748b;
-  --border-color: #e2e8f0;
+  
+  --border-color: #E6E7EB; /* Mist */
   --border-hover: #cbd5e1;
-  --accent-color: #000000;
-  --accent-hover: #333333;
+  
+  --accent-color: #3972E5; /* Blue hour */
+  --accent-hover: #1d4ed8;
+  
   --glow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 

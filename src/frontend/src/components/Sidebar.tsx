@@ -37,11 +37,14 @@ export default function Sidebar() {
         {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
       </button>
 
-      <div className="sidebar-header" style={{ padding: isCollapsed ? '20px 8px' : '20px', display: 'flex', justifyContent: 'center' }}>
+      <div className="sidebar-header" style={{ padding: isCollapsed ? '24px 8px' : '24px', display: 'flex', justifyContent: 'center' }}>
         <img
-          src={theme === 'light' || theme === 'white' ? '/heroics_aegis_logo.png' : '/heroics_aegis_logo_white.png'}
+          src={isCollapsed 
+            ? (theme === 'light' || theme === 'white' ? '/heroics_aegis_log_nowords.png' : '/heroics_aegis_log_nowords_white.png')
+            : (theme === 'light' || theme === 'white' ? '/heroics_aegis_logo.png' : '/heroics_aegis_logo_white.png')
+          }
           alt="AEGIS Logo"
-          style={{ height: isCollapsed ? '32px' : '48px', objectFit: 'contain', transition: 'height 0.3s' }}
+          style={{ height: isCollapsed ? '48px' : 'auto', width: isCollapsed ? 'auto' : '100%', maxHeight: '80px', objectFit: 'contain', transition: 'all 0.3s' }}
         />
       </div>
 

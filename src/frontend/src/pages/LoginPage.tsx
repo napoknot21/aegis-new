@@ -1,17 +1,31 @@
 import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '../store/themeStore';
-
-const QUOTES = [
-  "Risk comes from not knowing what you're doing.",
-  "The four most dangerous words in investing are: 'This time it's different'.",
-  "In investing, what is comfortable is rarely profitable.",
-  "Price is what you pay. Value is what you get.",
-  "The stock market is a device for transferring money from the impatient to the patient."
-];
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { theme } = useThemeStore();
+  const [quoteData, setQuoteData] = useState<{ quote: string; author: string } | null>(null);
+
+  useEffect(() => {
+    async function fetchQuote() {
+      try {
+        const { data, error } = await supabase
+          .from('quotes')
+          .select('quote, author');
+        
+        if (!error && data && data.length > 0) {
+          const randomIndex = Math.floor(Math.random() * data.length);
+          setQuoteData(data[randomIndex]);
+        }
+      } catch (err) {
+        console.error('Error fetching quotes:', err);
+      }
+    }
+    
+    fetchQuote();
+  }, []);
 
   const handleLogin = () => {
     navigate('/trading');
@@ -25,7 +39,7 @@ export default function LoginPage() {
         <img
           src={isLight ? '/heroics_aegis_logo.png' : '/heroics_aegis_logo_white.png'}
           alt="AEGIS Logo"
-          style={{ height: '120px', objectFit: 'contain', marginBottom: '24px' }}
+          style={{ height: '120px', maxWidth: '100%', objectFit: 'contain', marginBottom: '24px' }}
         />
         <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>AEGIS System</h2>
         <p style={{ margin: '0 0 32px 0', color: 'var(--text-secondary)', textAlign: 'center' }}>Hedge Fund Management & Controls</p>
@@ -39,28 +53,16 @@ export default function LoginPage() {
         </button>
       </div>
 
-      <div style={{ position: 'absolute', bottom: '10%', width: '100vw', overflow: 'hidden', padding: '16px 0', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)', opacity: 0.8 }}>
-        <div 
-          style={{ 
-            display: 'flex',
-            width: 'max-content',
-            animation: 'marquee 40s linear infinite'
-          }}
-        >
-          {[...QUOTES, ...QUOTES, ...QUOTES, ...QUOTES].map((quote, idx) => (
-            <div key={idx} style={{ flex: '0 0 auto', padding: '0 60px', color: 'var(--text-secondary)', fontSize: '14px', letterSpacing: '2px', fontWeight: 500, textTransform: 'uppercase' }}>
-              &ldquo;{quote}&rdquo;
-            </div>
-          ))}
+      {quoteData && (
+        <div style={{ position: 'absolute', bottom: '10%', width: '100vw', padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)', opacity: 0.85, zIndex: 5 }}>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '16px', fontStyle: 'italic', textAlign: 'center', maxWidth: '800px', lineHeight: 1.5 }}>
+            &ldquo;{quoteData.quote}&rdquo;
+          </div>
+          <div style={{ marginTop: '12px', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>
+            &mdash; {quoteData.author}
+          </div>
         </div>
-      </div>
-      
-      <style>{`
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-      `}</style>
+      )}
     </div>
   );
 }

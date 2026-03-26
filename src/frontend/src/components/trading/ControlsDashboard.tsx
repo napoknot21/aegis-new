@@ -50,8 +50,8 @@ export default function ControlsDashboard() {
   const groupedData = useMemo(() => {
     const map = new Map<string, { category: RiskCategory, controls: Map<number, { definition: ControlDefinition, levels: ControlLevel[] }> }>();
     
-    controlsCache.forEach(level => {
-      const def = level.control_definitions;
+    (controlsCache || []).forEach(level => {
+      const def = level?.control_definitions;
       if (!def) return;
       const cat = def.risk_categories;
       if (!cat) return;

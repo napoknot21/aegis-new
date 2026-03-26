@@ -51,5 +51,5 @@ export async function fetchFundControls(fundId: number): Promise<ControlLevel[]>
     throw error;
   }
   
-  return data as ControlLevel[];
+  return (data as ControlLevel[]) || [];
 }

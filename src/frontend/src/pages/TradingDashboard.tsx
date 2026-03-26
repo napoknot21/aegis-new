@@ -4,6 +4,7 @@ import TradeBooker from '../components/trading/TradeBooker';
 import DataViewer from '../components/trading/DataViewer';
 import TradeChecker from '../components/trading/TradeChecker';
 import ControlsDashboard from '../components/trading/ControlsDashboard';
+import TradeRecap from '../components/trading/TradeRecap';
 
 export default function TradingDashboard() {
   return (
@@ -14,16 +15,17 @@ export default function TradingDashboard() {
           Manage your trade bookings, data review, validation, and risk limits.
         </p>
       </header>
-      
+
       <TopNav />
 
       <div style={{ padding: '32px 40px', flex: 1, overflowY: 'auto' }}>
         <Routes>
           <Route path="/" element={<Navigate to="booker" replace />} />
-          <Route path="booker" element={<TradeBooker />} />
-          <Route path="viewer" element={<DataViewer />} />
-          <Route path="checker" element={<TradeChecker />} />
-          <Route path="controls" element={<ControlsDashboard />} />
+          <Route path="Booker" element={<TradeBooker />} />
+          <Route path="Viewer" element={<DataViewer />} />
+          <Route path="Checker" element={<TradeChecker />} />
+          <Route path="Controls" element={<ControlsDashboard />} />
+          <Route path="Recap" element={<TradeRecap />} />
         </Routes>
       </div>
     </div>

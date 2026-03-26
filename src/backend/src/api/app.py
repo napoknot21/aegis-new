@@ -54,6 +54,8 @@ def create_app() -> FastAPI:
     app.include_router(subred.router)
     # app.include_router(nav.router)
     # app.include_router(simm.router)
+    from src.api.routes import recap
+    app.include_router(recap.router)
 
     @app.get("/health")
     def health():

@@ -43,3 +43,13 @@ def get_mtd_start(date_ref: Optional[str | dt.datetime | dt.date] = None) -> dt.
     date_ref = str_to_date(date_ref)
     first_day = date_ref.replace(day=1)
     return first_day - dt.timedelta(days=1)
+
+def resolve_trade_dates(date: Optional[str] = None, 
+                        trade_date: Optional[str] = None) -> tuple[dt.date, dt.date]:
+    """
+    Resolves a base string date and a trade string date into Python dt.date.
+    If they are missing, it defaults to the previous business day.
+    """
+    d = previous_business_day(date) if date else previous_business_day(dt.date.today())
+    td = previous_business_day(trade_date) if trade_date else previous_business_day(dt.date.today())
+    return d, td

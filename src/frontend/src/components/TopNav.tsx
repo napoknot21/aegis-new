@@ -5,6 +5,7 @@ const SUB_TABS = [
   { name: 'Data Viewer', path: 'viewer' },
   { name: 'Checker', path: 'checker' },
   { name: 'Controls', path: 'controls' },
+  { name: 'Recap', path: 'recap' },
 ];
 
 export default function TopNav() {

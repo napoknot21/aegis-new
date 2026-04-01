@@ -52,7 +52,7 @@ export default function ControlsDashboard() {
     const map = new Map<string, { category: RiskCategory, controls: Map<number, { definition: ControlDefinition, levels: ControlLevel[] }> }>();
     
     (controlsCache || []).forEach(level => {
-      const def = level?.risk_risk_control_definitions;
+      const def = level?.risk_control_definitions;
       if (!def) return;
       const cat = def.risk_categories;
       if (!cat) return;

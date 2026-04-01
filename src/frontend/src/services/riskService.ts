@@ -30,7 +30,7 @@ export interface ControlLevel {
   upper_inclusive: boolean;
   side: string;
   is_active: boolean;
-  control_definitions?: ControlDefinition;
+  risk_control_definitions?: ControlDefinition;
 }
 
 export async function fetchFundControls(fundId: number): Promise<ControlLevel[]> {
@@ -38,7 +38,7 @@ export async function fetchFundControls(fundId: number): Promise<ControlLevel[]>
     .from('control_levels')
     .select(`
       *,
-      control_definitions (
+      risk_control_definitions (
         *,
         risk_categories (*)
       )

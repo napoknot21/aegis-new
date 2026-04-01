@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom';
 
 const SUB_TABS = [
-  { name: 'Booker', path: 'booker' },
-  { name: 'Data Viewer', path: 'viewer' },
-  { name: 'Checker', path: 'checker' },
-  { name: 'Controls', path: 'controls' },
-  { name: 'Recap', path: 'recap' },
+  { name: 'Booker', path: 'Booker' },
+  { name: 'Data Viewer', path: 'Viewer' },
+  { name: 'Checker', path: 'Checker' },
+  { name: 'Controls', path: 'Controls' },
+  { name: 'Recap', path: 'Recap' },
 ];
 
 export default function TopNav() {

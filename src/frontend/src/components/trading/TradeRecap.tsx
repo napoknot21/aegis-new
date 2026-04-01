@@ -15,7 +15,9 @@ interface TradeRecord {
 export default function TradeRecap() {
   const [data, setData] = useState<TradeRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [booking, setBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   
   const [reportDate, setReportDate] = useState('');
   const [tradeDate, setTradeDate] = useState('');
@@ -23,6 +25,7 @@ export default function TradeRecap() {
   const runTradeRecap = async () => {
     setLoading(true);
     setError(null);
+    setIsEditing(false);
     try {
       const params = new URLSearchParams();
       if (reportDate) params.append('date', reportDate);
@@ -48,41 +51,101 @@ export default function TradeRecap() {
     }
   };
 
+  const handleCellChange = (rowIndex: number, field: keyof TradeRecord, value: any) => {
+    const newData = [...data];
+    newData[rowIndex] = { ...newData[rowIndex], [field]: value };
+    // Auto-cast numerics if applicable
+    if (field === 'Quantity' || field === 'Price') {
+       newData[rowIndex][field] = Number(value) || 0;
+    }
+    setData(newData);
+  };
+
+  const bookTrades = async () => {
+    setBooking(true);
+    setError(null);
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/recap/book`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Booking failed: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      alert(`Successfully booked ${result.booked_count} trades!`);
+      setIsEditing(false);
+    } catch (err: any) {
+      setError(err.message || 'Error booking trades');
+    } finally {
+      setBooking(false);
+    }
+  };
+
   return (
     <div className="fade-in">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        <div className="glass-panel" style={{ padding: '24px', display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <div className="glass-panel" style={{ padding: '24px', display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap', justifyContent: 'space-between' }}>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>Report Date (Optional)</label>
-            <input 
-              type="date"
-              value={reportDate}
-              onChange={(e) => setReportDate(e.target.value)}
-              className="input-field"
-              style={{ padding: '8px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)' }}
-            />
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>Report Date (Optional)</label>
+              <input 
+                type="date"
+                value={reportDate}
+                onChange={(e) => setReportDate(e.target.value)}
+                className="input-field"
+                style={{ padding: '8px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>Trade Date (Optional)</label>
+              <input 
+                type="date"
+                value={tradeDate}
+                onChange={(e) => setTradeDate(e.target.value)}
+                className="input-field"
+                style={{ padding: '8px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)' }}
+              />
+            </div>
+
+            <button 
+              className="btn-primary" 
+              onClick={runTradeRecap}
+              disabled={loading || booking}
+              style={{ padding: '10px 24px', height: 'fit-content', alignSelf: 'flex-end' }}
+            >
+              {loading ? 'Running...' : 'Run trade Recap'}
+            </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>Trade Date (Optional)</label>
-            <input 
-              type="date"
-              value={tradeDate}
-              onChange={(e) => setTradeDate(e.target.value)}
-              className="input-field"
-              style={{ padding: '8px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)' }}
-            />
-          </div>
-
-          <button 
-            className="btn-primary" 
-            onClick={runTradeRecap}
-            disabled={loading}
-            style={{ padding: '10px 24px', height: 'fit-content' }}
-          >
-            {loading ? 'Running...' : 'Run trade Recap'}
-          </button>
+          {data.length > 0 && (
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                className="btn-secondary" 
+                onClick={() => setIsEditing(!isEditing)}
+                disabled={loading || booking}
+                style={{ padding: '10px 24px', height: 'fit-content' }}
+              >
+                {isEditing ? 'Cancel Edit' : 'Edit Table'}
+              </button>
+              
+              {isEditing && (
+                <button 
+                  className="btn-primary" 
+                  onClick={bookTrades}
+                  disabled={loading || booking}
+                  style={{ padding: '10px 24px', height: 'fit-content', backgroundColor: 'var(--accent-color)' }}
+                >
+                  {booking ? 'Booking...' : 'Book Trades'}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {error && (
@@ -112,25 +175,55 @@ export default function TradeRecap() {
               <tbody>
                 {data.map((row, idx) => (
                   <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '12px', color: 'var(--text-primary)' }}>{row.TradeId}</td>
-                    <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>{row.Date}</td>
-                    <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>{row.TradeDate}</td>
-                    <td style={{ padding: '12px', color: 'var(--text-primary)' }}>{row.Portfolio}</td>
-                    <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>{row.ProductType}</td>
-                    <td style={{ padding: '12px', color: 'var(--text-primary)' }}>{row.Quantity.toLocaleString()}</td>
-                    <td style={{ padding: '12px', color: 'var(--text-primary)' }}>{row.Price.toFixed(4)}</td>
-                    <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>{row.Currency}</td>
-                    <td style={{ padding: '12px' }}>
-                      <span style={{ 
-                        padding: '4px 8px', 
-                        borderRadius: '4px', 
-                        fontSize: '12px', 
-                        fontWeight: 600,
-                        backgroundColor: row.Status === 'SETTLED' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(234, 179, 8, 0.1)',
-                        color: row.Status === 'SETTLED' ? '#22c55e' : '#eab308'
-                      }}>
-                        {row.Status}
-                      </span>
+                    <td style={{ padding: '4px 12px', color: 'var(--text-primary)' }}>{row.TradeId}</td>
+                    
+                    <td style={{ padding: '4px 12px', color: 'var(--text-secondary)' }}>
+                      {isEditing ? <input type="date" value={row.Date} onChange={e => handleCellChange(idx, 'Date', e.target.value)} style={{ width: '100%', background: 'transparent', border: '1px solid var(--border-color)', color: 'inherit', padding: '4px' }}/> : row.Date}
+                    </td>
+                    
+                    <td style={{ padding: '4px 12px', color: 'var(--text-secondary)' }}>
+                      {isEditing ? <input type="date" value={row.TradeDate} onChange={e => handleCellChange(idx, 'TradeDate', e.target.value)} style={{ width: '100%', background: 'transparent', border: '1px solid var(--border-color)', color: 'inherit', padding: '4px' }}/> : row.TradeDate}
+                    </td>
+                    
+                    <td style={{ padding: '4px 12px', color: 'var(--text-primary)' }}>
+                      {isEditing ? <input type="text" value={row.Portfolio} onChange={e => handleCellChange(idx, 'Portfolio', e.target.value)} style={{ width: '100%', background: 'transparent', border: '1px solid var(--border-color)', color: 'inherit', padding: '4px' }}/> : row.Portfolio}
+                    </td>
+                    
+                    <td style={{ padding: '4px 12px', color: 'var(--text-secondary)' }}>
+                      {isEditing ? <input type="text" value={row.ProductType} onChange={e => handleCellChange(idx, 'ProductType', e.target.value)} style={{ width: '100%', background: 'transparent', border: '1px solid var(--border-color)', color: 'inherit', padding: '4px' }}/> : row.ProductType}
+                    </td>
+                    
+                    <td style={{ padding: '4px 12px', color: 'var(--text-primary)' }}>
+                      {isEditing ? <input type="number" value={row.Quantity} onChange={e => handleCellChange(idx, 'Quantity', e.target.value)} style={{ width: '80px', background: 'transparent', border: '1px solid var(--border-color)', color: 'inherit', padding: '4px' }}/> : row.Quantity.toLocaleString()}
+                    </td>
+                    
+                    <td style={{ padding: '4px 12px', color: 'var(--text-primary)' }}>
+                      {isEditing ? <input type="number" step="0.0001" value={row.Price} onChange={e => handleCellChange(idx, 'Price', e.target.value)} style={{ width: '80px', background: 'transparent', border: '1px solid var(--border-color)', color: 'inherit', padding: '4px' }}/> : row.Price.toFixed(4)}
+                    </td>
+                    
+                    <td style={{ padding: '4px 12px', color: 'var(--text-secondary)' }}>
+                      {isEditing ? <input type="text" value={row.Currency} onChange={e => handleCellChange(idx, 'Currency', e.target.value)} style={{ width: '60px', background: 'transparent', border: '1px solid var(--border-color)', color: 'inherit', padding: '4px' }}/> : row.Currency}
+                    </td>
+                    
+                    <td style={{ padding: '4px 12px' }}>
+                      {isEditing ? (
+                        <select value={row.Status} onChange={e => handleCellChange(idx, 'Status', e.target.value)} style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '4px' }}>
+                          <option value="PENDING">PENDING</option>
+                          <option value="SETTLED">SETTLED</option>
+                          <option value="CANCELLED">CANCELLED</option>
+                        </select>
+                      ) : (
+                        <span style={{ 
+                          padding: '4px 8px', 
+                          borderRadius: '4px', 
+                          fontSize: '12px', 
+                          fontWeight: 600,
+                          backgroundColor: row.Status === 'SETTLED' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(234, 179, 8, 0.1)',
+                          color: row.Status === 'SETTLED' ? '#22c55e' : '#eab308'
+                        }}>
+                          {row.Status}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}

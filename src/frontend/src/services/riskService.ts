@@ -35,7 +35,7 @@ export interface ControlLevel {
 
 export async function fetchFundControls(fundId: number): Promise<ControlLevel[]> {
   const { data, error } = await supabase
-    .from('control_levels')
+    .from('risk_control_levels')
     .select(`
       *,
       risk_control_definitions (

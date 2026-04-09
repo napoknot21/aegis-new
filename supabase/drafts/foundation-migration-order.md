@@ -1,16 +1,16 @@
 # SQL Migration Order
 
-This note describes the minimum migration order needed before
-`core-schema-draft.sql` can become part of the official schema history.
+This note describes the migration order used to convert the validated drafts
+into the official schema history.
 
 ## Missing Foundation Tables
 
 The current draft still depends on these tables:
 
-- `organisations`
 - `currencies`
-- `offices`
 - `asset_classes`
+- `organisations`
+- `offices`
 - `departments`
 - `office_departments`
 - `users`
@@ -27,16 +27,17 @@ It also references business concepts that should probably exist before or alongs
 
 ## Recommended Migration Order
 
-1. `init_reference_data.sql`
+1. `20260409020000_init_shared_reference.sql`
+
+- `currencies`
+- `asset_classes`
+
+2. `20260409020100_init_authz_reference.sql`
 
 - `organisations`
-- `currencies`
 - `offices`
-- `asset_classes`
 - `departments`
 - `office_departments`
-
-2. `init_authz.sql`
 
 - `users`
 - `ranks`
@@ -47,7 +48,7 @@ It also references business concepts that should probably exist before or alongs
 - `user_access_roles`
 - fund and organisation scoping tables
 
-3. `init_trade_core.sql`
+3. `20260409020200_init_trade_core.sql`
 
 - `funds`
 - `fund_office_access`
@@ -61,12 +62,12 @@ It also references business concepts that should probably exist before or alongs
 - `trade_disc`
 - trade child tables
 
-4. `init_simm_and_expiries.sql`
+4. `20260409020300_init_simm_and_expiries.sql`
 
 - `simm_snapshots`
-- `simm_rows`
+- `simm_snapshot_rows`
 - `expiries_snapshots`
-- `expiries_rows`
+- `expiries`
 
 5. `enable_rls.sql`
 

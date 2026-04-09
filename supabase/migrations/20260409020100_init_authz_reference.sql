@@ -1,23 +1,21 @@
 -- ============================================================
--- AEGIS - authz and reference foundation draft
+-- AEGIS - official migration: authz and tenant reference foundation
+-- Source draft: supabase/drafts/authz-reference-draft.sql
+--
 -- Scope:
 --   - organisations
 --   - offices
 --   - departments
 --   - office_departments
---   - users sourced from Microsoft Entra / MSAL
+--   - users
 --   - ranks
---   - access roles
---   - user assignments
+--   - access_roles
+--   - user assignment tables
 --
 -- Notes:
---   - This draft uses `users` as requested for the application table.
---   - `entra_oid` is the canonical identity key from Microsoft Entra ID.
---   - Authentication happens outside the database; this schema models
---     application users and authorization data.
+--   - Authentication happens outside the database.
 --   - Tenant boundary = organisation.
---   - Join tables carry `id_org` explicitly to prevent cross-tenant links.
---   - RLS and grants must be added in a later migration.
+--   - Join tables carry id_org explicitly to prevent cross-tenant links.
 -- ============================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -112,7 +110,6 @@ CREATE INDEX IF NOT EXISTS idx_departments_org ON departments(id_org);
 
 -- ============================================================
 -- OFFICE <-> DEPARTMENT
--- Which departments are present in which office
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS office_departments (
@@ -146,7 +143,6 @@ CREATE INDEX IF NOT EXISTS idx_office_departments_department ON office_departmen
 
 -- ============================================================
 -- USERS
--- Application users mapped from Microsoft Entra / MSAL
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS users (
@@ -184,7 +180,6 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 -- ============================================================
 -- USER <-> OFFICE
--- A user may belong to one or more offices
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS user_offices (
@@ -217,7 +212,6 @@ CREATE INDEX IF NOT EXISTS idx_user_offices_office ON user_offices(id_off);
 
 -- ============================================================
 -- USER <-> OFFICE_DEPARTMENT
--- This ensures departments assigned to users exist in the office
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS user_departments (
@@ -250,7 +244,6 @@ CREATE INDEX IF NOT EXISTS idx_user_departments_off_dep ON user_departments(id_o
 
 -- ============================================================
 -- RANKS
--- Hierarchical titles like board, head_of, intern, etc.
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS ranks (
@@ -283,7 +276,6 @@ CREATE INDEX IF NOT EXISTS idx_ranks_org ON ranks(id_org);
 
 -- ============================================================
 -- USER <-> RANK
--- Keep this separate in case rank history matters later
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS user_ranks (
@@ -315,13 +307,6 @@ CREATE INDEX IF NOT EXISTS idx_user_ranks_rank ON user_ranks(id_rank);
 
 -- ============================================================
 -- ACCESS ROLES
--- These are app permissions, not hierarchy titles
--- Examples:
---   - super_admin
---   - board_read
---   - risk_write
---   - trade_booker
---   - tech_admin
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS access_roles (
@@ -352,7 +337,6 @@ CREATE INDEX IF NOT EXISTS idx_access_roles_org ON access_roles(id_org);
 
 -- ============================================================
 -- USER <-> ACCESS ROLE
--- Fine-grained permissions can be added later on top of this
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS user_access_roles (

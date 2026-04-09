@@ -1,6 +1,17 @@
 node_modules/
 __pycache__/
 .env
+.env.local
+.env.*.local
+src/backend/.env
+src/backend/.env.local
+src/backend/.env.*.local
+src/frontend/.env
+src/frontend/.env.local
+src/frontend/.env.*.local
+supabase/.env
+supabase/.env.local
+supabase/.env.*.local
 *.pdf
 *.xlsx
 *.xls

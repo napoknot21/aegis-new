@@ -1,0 +1,2 @@
+-- Local seed data only.
+-- Keep this file free of production or sensitive data.

@@ -2,7 +2,8 @@
 from typing import List, Optional
 from fastapi import APIRouter, Query, status
 
-from app.api.dependencies import TradeServiceDep
+from app.api.dependencies import ReferenceServiceDep, TradeServiceDep
+from app.domain.reference.schemas import TradeLabelResponse, build_trade_label_response
 from app.domain.trades.schemas import (
     DiscTradeAggregateResponse,
     DiscTradeCreateRequest,
@@ -15,6 +16,17 @@ from app.domain.trades.schemas import (
 
 
 router = APIRouter(tags=["trades"])
+
+
+@router.get("/labels", response_model=List[TradeLabelResponse])
+def list_trade_labels(
+        reference_service : ReferenceServiceDep,
+        id_org : int = Query(..., gt=0)
+    ) -> List[TradeLabelResponse] :
+    return [
+        build_trade_label_response(item)
+        for item in reference_service.list_trade_labels(id_org=id_org)
+    ]
 
 
 @router.get("/types", response_model=List[TradeTypeResponse])

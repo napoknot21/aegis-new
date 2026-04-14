@@ -1,4 +1,5 @@
-import { supabase } from '../lib/supabase';
+import { runtimeConfig } from '../config/runtime';
+import { apiGet } from '../lib/backendClient';
 
 export interface RiskCategory {
   id_cat: number;
@@ -34,22 +35,8 @@ export interface ControlLevel {
 }
 
 export async function fetchFundControls(fundId: number): Promise<ControlLevel[]> {
-  const { data, error } = await supabase
-    .from('risk_control_levels')
-    .select(`
-      *,
-      risk_control_definitions (
-        *,
-        risk_categories (*)
-      )
-    `)
-    .eq('id_f', fundId)
-    .eq('is_active', true);
-
-  if (error) {
-    console.error("Error fetching fund controls:", error);
-    throw error;
-  }
-  
-  return (data as ControlLevel[]) || [];
+  return apiGet<ControlLevel[]>('/risk/controls', {
+    id_f: fundId,
+    id_org: runtimeConfig.defaultOrgId,
+  });
 }

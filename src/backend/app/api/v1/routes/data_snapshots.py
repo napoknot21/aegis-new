@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Annotated, List
 
 from fastapi import APIRouter, Query, status
 
 from app.api.dependencies import DataSnapshotServiceDep
-from app.domain.data_snapshots.enums import DatasetCode
+from app.domain.data_snapshots.enums import DatasetCode, SnapshotStatus
 from app.domain.data_snapshots.schemas import (
     DataSnapshotAggregateResponse,
     DataSnapshotCreateRequest,
@@ -21,6 +22,11 @@ router = APIRouter(tags=["data snapshots"])
 
 IdOrgQuery = Annotated[int, Query(description="Organisation identifier.")]
 FundQuery = Annotated[int | None, Query(description="Optional fund filter.")]
+StatusQuery = Annotated[SnapshotStatus | None, Query(description="Optional snapshot status filter.")]
+OfficialQuery = Annotated[bool | None, Query(description="Optional official/latest filter.")]
+AsOfDateQuery = Annotated[date | None, Query(description="Optional exact as-of date filter.")]
+AsOfDateFromQuery = Annotated[date | None, Query(description="Optional lower bound for as-of date.")]
+AsOfDateToQuery = Annotated[date | None, Query(description="Optional upper bound for as-of date.")]
 
 
 @router.get("/datasets", response_model=List[DatasetDefinitionResponse])
@@ -38,12 +44,27 @@ def list_dataset_snapshots (
         id_org : IdOrgQuery,
         service : DataSnapshotServiceDep,
         id_f : FundQuery = None,
+        status : StatusQuery = None,
+        is_official : OfficialQuery = None,
+        as_of_date : AsOfDateQuery = None,
+        as_of_date_from : AsOfDateFromQuery = None,
+        as_of_date_to : AsOfDateToQuery = None,
     
     ) -> List[DataSnapshotSummaryResponse] :
     """
-    Endpoint to list all data snapshots for a given dataset and organization, with optional filtering by fund.
+    Endpoint to list data snapshots for a dataset and organisation, with optional filtering by fund,
+    status, official/latest flag, and as-of date range.
     """
-    snapshots = service.list_snapshots(dataset=dataset, id_org=id_org, id_f=id_f)
+    snapshots = service.list_snapshots(
+        dataset=dataset,
+        id_org=id_org,
+        id_f=id_f,
+        status=status,
+        is_official=is_official,
+        as_of_date=as_of_date,
+        as_of_date_from=as_of_date_from,
+        as_of_date_to=as_of_date_to,
+    )
 
     return [build_data_snapshot_summary_response(item) for item in snapshots]
 
@@ -79,4 +100,3 @@ def create_dataset_snapshot (
     aggregate = service.create_snapshot(dataset=dataset, payload=payload)
     
     return build_data_snapshot_aggregate_response(aggregate)
-

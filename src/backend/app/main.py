@@ -21,7 +21,7 @@ def create_app() -> FastAPI:
     )
 
     app.state.settings = settings
-    app.state.container = build_container()
+    app.state.container = build_container(settings)
 
     app.add_middleware(
         CORSMiddleware,

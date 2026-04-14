@@ -4,7 +4,8 @@ import { Activity, ShieldCheck, Microscope, Cpu, Users, Briefcase, ChevronLeft, 
 import ThemeToggle from './ThemeToggle';
 import { useAppStore } from '../store/appStore';
 import { useThemeStore } from '../store/themeStore';
-import { fetchFunds } from '../services/tradeService';
+import { fetchFunds } from '../services/referenceService';
+import type { Fund } from '../types/reference';
 import './Sidebar.css';
 
 const TABS = [
@@ -19,14 +20,14 @@ const TABS = [
 export default function Sidebar() {
   const { selectedFund, globalDate, setSelectedFund, setGlobalDate } = useAppStore();
   const { theme } = useThemeStore();
-  const [funds, setFunds] = useState<any[]>([]);
+  const [funds, setFunds] = useState<Fund[]>([]);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     fetchFunds().then((data) => {
       setFunds(data);
       if (data.length > 0 && !useAppStore.getState().selectedFund) {
-        useAppStore.getState().setSelectedFund(data[0].id_f || data[0].id);
+        useAppStore.getState().setSelectedFund(data[0].id_f);
       }
     });
   }, []);
@@ -81,7 +82,7 @@ export default function Sidebar() {
               className="sidebar-input"
             >
               {funds.map(f => (
-                <option key={f.id_f || f.id} value={f.id_f || f.id}>{f.name}</option>
+                <option key={f.id_f} value={f.id_f}>{f.name}</option>
               ))}
             </select>
           </div>

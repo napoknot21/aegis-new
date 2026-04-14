@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Filter, Search, Download } from 'lucide-react';
 import { fetchTrades } from '../../services/tradeService';
-import type { Trade } from '../../services/tradeService';
+import type { TradeSummary } from '../../types/trades';
 import './DataViewer.css';
 
 export default function DataViewer() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [trades, setTrades] = useState<Trade[]>([]);
+  const [trades, setTrades] = useState<TradeSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,8 +26,10 @@ export default function DataViewer() {
   }, []);
 
   const filteredTrades = trades.filter(t => 
-    (t.instrument || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (t.id || '').toLowerCase().includes(searchTerm.toLowerCase())
+    String(t.id_spe).includes(searchTerm) ||
+    String(t.id_trade).includes(searchTerm) ||
+    t.type_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -57,19 +59,19 @@ export default function DataViewer() {
         <table className="data-table">
           <thead>
             <tr>
+              <th>SPE</th>
               <th>Trade ID</th>
-              <th>Date</th>
+              <th>Booked At</th>
               <th>Type</th>
-              <th>Instrument</th>
-              <th className="number-col">Quantity</th>
-              <th className="number-col">Price</th>
+              <th>Fund</th>
+              <th className="number-col">Booked By</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="empty-state">Loading trades from Supabase...</td>
+                <td colSpan={7} className="empty-state">Loading trades from backend...</td>
               </tr>
             ) : filteredTrades.length === 0 ? (
               <tr>
@@ -77,13 +79,13 @@ export default function DataViewer() {
               </tr>
             ) : (
               filteredTrades.map((trade) => (
-                <tr key={trade.id}>
-                  <td className="fw-500">{trade.id}</td>
-                  <td className="text-secondary">{trade.date}</td>
-                  <td><span className="badge">{trade.type}</span></td>
-                  <td className="fw-500">{trade.instrument}</td>
-                  <td className="number-col text-secondary">{trade.qty}</td>
-                  <td className="number-col fw-500">{trade.price}</td>
+                <tr key={trade.id_trade}>
+                  <td className="fw-500">{trade.id_spe}</td>
+                  <td className="fw-500">{trade.id_trade}</td>
+                  <td className="text-secondary">{new Date(trade.booked_at).toLocaleString()}</td>
+                  <td><span className="badge">{trade.type_code}</span></td>
+                  <td className="fw-500">{trade.id_f}</td>
+                  <td className="number-col text-secondary">{trade.booked_by ?? 'N/A'}</td>
                   <td>
                     <span className={`status-dot ${trade.status.toLowerCase()}`}></span>
                     {trade.status}

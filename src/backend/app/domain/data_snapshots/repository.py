@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import date
 from typing import Protocol
 
 from app.domain.data_snapshots.entities import DataSnapshotAggregate, DataSnapshotRecord, DataSnapshotRowRecord, DatasetDefinition
-from app.domain.data_snapshots.enums import DatasetCode
+from app.domain.data_snapshots.enums import DatasetCode, SnapshotStatus
 
 
 class DataSnapshotUnitOfWork(Protocol):
@@ -20,7 +21,17 @@ class DataSnapshotUnitOfWork(Protocol):
 
     def get_dataset_definition(self, dataset: DatasetCode) -> DatasetDefinition: ...
 
-    def list_snapshots(self, dataset: DatasetCode, id_org: int, id_f: int | None = None) -> list[DataSnapshotRecord]: ...
+    def list_snapshots(
+        self,
+        dataset: DatasetCode,
+        id_org: int,
+        id_f: int | None = None,
+        status: SnapshotStatus | None = None,
+        is_official: bool | None = None,
+        as_of_date: date | None = None,
+        as_of_date_from: date | None = None,
+        as_of_date_to: date | None = None,
+    ) -> list[DataSnapshotRecord]: ...
 
     def get_snapshot(self, dataset: DatasetCode, id_org: int, snapshot_id: int) -> DataSnapshotAggregate | None: ...
 
@@ -34,4 +45,3 @@ class DataSnapshotUnitOfWork(Protocol):
 
 
 DataSnapshotUnitOfWorkFactory = Callable[[], DataSnapshotUnitOfWork]
-

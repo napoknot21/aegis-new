@@ -6,6 +6,7 @@ from fastapi import Depends, Request
 
 from app.bootstrap.container import Container
 from app.domain.data_snapshots.service import DataSnapshotApplicationService
+from app.domain.reference.service import ReferenceApplicationService
 from app.domain.trades.service import TradeApplicationService
 
 
@@ -32,3 +33,9 @@ DataSnapshotServiceDep = Annotated[
     Depends(get_data_snapshot_service),
 ]
 
+
+def get_reference_service(container: ContainerDep) -> ReferenceApplicationService:
+    return container.reference_service
+
+
+ReferenceServiceDep = Annotated[ReferenceApplicationService, Depends(get_reference_service)]

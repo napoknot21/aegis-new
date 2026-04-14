@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from app.domain.data_snapshots.entities import DataSnapshotRecord, DataSnapshotRowRecord
-from app.domain.data_snapshots.enums import DatasetCode, SnapshotCadence, SnapshotShape
+from app.domain.data_snapshots.enums import DatasetCode, SnapshotCadence, SnapshotShape, SnapshotStatus
 from app.domain.data_snapshots.repository import DataSnapshotUnitOfWorkFactory
 from app.domain.data_snapshots.schemas import DataSnapshotCreateRequest
 from app.domain.shared.errors import ConflictError, NotFoundError
@@ -17,10 +17,29 @@ class DataSnapshotApplicationService:
         with self._uow_factory() as uow:
             return uow.list_dataset_definitions()
 
-    def list_snapshots(self, dataset: DatasetCode, id_org: int, id_f: int | None = None):
+    def list_snapshots(
+        self,
+        dataset: DatasetCode,
+        id_org: int,
+        id_f: int | None = None,
+        status: SnapshotStatus | None = None,
+        is_official: bool | None = None,
+        as_of_date: date | None = None,
+        as_of_date_from: date | None = None,
+        as_of_date_to: date | None = None,
+    ):
         with self._uow_factory() as uow:
             uow.get_dataset_definition(dataset)
-            return uow.list_snapshots(dataset=dataset, id_org=id_org, id_f=id_f)
+            return uow.list_snapshots(
+                dataset=dataset,
+                id_org=id_org,
+                id_f=id_f,
+                status=status,
+                is_official=is_official,
+                as_of_date=as_of_date,
+                as_of_date_from=as_of_date_from,
+                as_of_date_to=as_of_date_to,
+            )
 
     def get_snapshot(self, dataset: DatasetCode, id_org: int, snapshot_id: int):
         with self._uow_factory() as uow:
@@ -111,4 +130,3 @@ class DataSnapshotApplicationService:
                     f"Duplicate row_key '{row.row_key}' is not allowed inside one {dataset} snapshot."
                 )
             seen_keys.add(row.row_key)
-

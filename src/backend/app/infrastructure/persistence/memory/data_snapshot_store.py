@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from app.domain.data_snapshots.catalog import get_dataset_catalog
 from app.domain.data_snapshots.entities import DataSnapshotAggregate, DataSnapshotRecord, DataSnapshotRowRecord, DatasetDefinition
-from app.domain.data_snapshots.enums import DatasetCode
+from app.domain.data_snapshots.enums import DatasetCode, SnapshotStatus
 from app.domain.shared.errors import NotFoundError
 
 
@@ -54,12 +54,32 @@ class InMemoryDataSnapshotUnitOfWork:
             raise NotFoundError(f"Dataset {dataset} is not registered.")
         return definition
 
-    def list_snapshots(self, dataset: DatasetCode, id_org: int, id_f: int | None = None) -> list[DataSnapshotRecord]:
+    def list_snapshots(
+        self,
+        dataset: DatasetCode,
+        id_org: int,
+        id_f: int | None = None,
+        status: SnapshotStatus | None = None,
+        is_official: bool | None = None,
+        as_of_date: date | None = None,
+        as_of_date_from: date | None = None,
+        as_of_date_to: date | None = None,
+    ) -> list[DataSnapshotRecord]:
         items = [
             snapshot
             for snapshot in self._state().snapshots.values()
             if snapshot.dataset == dataset and snapshot.id_org == id_org and (id_f is None or snapshot.id_f == id_f)
         ]
+        if status is not None:
+            items = [snapshot for snapshot in items if snapshot.status == status]
+        if is_official is not None:
+            items = [snapshot for snapshot in items if snapshot.is_official == is_official]
+        if as_of_date is not None:
+            items = [snapshot for snapshot in items if snapshot.as_of_date == as_of_date]
+        if as_of_date_from is not None:
+            items = [snapshot for snapshot in items if snapshot.as_of_date >= as_of_date_from]
+        if as_of_date_to is not None:
+            items = [snapshot for snapshot in items if snapshot.as_of_date <= as_of_date_to]
         epoch = datetime.min.replace(tzinfo=timezone.utc)
         return sorted(
             items,
@@ -103,4 +123,3 @@ class InMemoryDataSnapshotUnitOfWork:
         if self._working_store is None:
             raise RuntimeError("Unit of work not started.")
         return self._working_store
-

@@ -1,4 +1,4 @@
-﻿-- ============================================================
+-- ============================================================
 -- AEGIS - harden schema coherence
 -- Purpose:
 --   - enforce single-primary assignment semantics

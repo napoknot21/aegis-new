@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { 
-  fetchAssetClasses, fetchCurrencies, 
-  fetchLabels, fetchBooks, fetchPortfolios, fetchCounterparties 
-} from '../../services/tradeService';
-import type { AssetClass, Currency } from '../../services/tradeService';
+import { runtimeConfig } from '../../config/runtime';
+import { fetchTradeFormReferences } from '../../services/referenceService';
+import { bookTrade } from '../../services/tradeService';
 import { useAppStore } from '../../store/appStore';
+import type { AssetClass, Book, Counterparty, Currency, TradeLabel } from '../../types/reference';
+import type { BuySell, DiscTradeCreatePayload, IceTradeStatus, OriginatingAction } from '../../types/trades';
 import './TradeBooker.css';
 
 export default function TradeBooker() {
   const { selectedFund } = useAppStore();
+  const defaultOrgId = runtimeConfig.defaultOrgId;
 
   const [formData, setFormData] = useState({
     // Trade Disc (General)
@@ -51,22 +52,23 @@ export default function TradeBooker() {
 
   const [assetClasses, setAssetClasses] = useState<AssetClass[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [labels, setLabels] = useState<any[]>([]);
-  const [books, setBooks] = useState<any[]>([]);
-  const [portfolios, setPortfolios] = useState<any[]>([]);
-  const [counterparties, setCounterparties] = useState<any[]>([]);
+  const [labels, setLabels] = useState<TradeLabel[]>([]);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [portfolios, setPortfolios] = useState<Book[]>([]);
+  const [counterparties, setCounterparties] = useState<Counterparty[]>([]);
   
   const [loadingRefs, setLoadingRefs] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [acData, ccyData, lblData, bkData, pfData, cpData] = await Promise.all([
-          fetchAssetClasses(), fetchCurrencies(), fetchLabels(),
-          fetchBooks(), fetchPortfolios(), fetchCounterparties()
-        ]);
-        setAssetClasses(acData); setCurrencies(ccyData); setLabels(lblData);
-        setBooks(bkData); setPortfolios(pfData); setCounterparties(cpData);
+        const references = await fetchTradeFormReferences();
+        setAssetClasses(references.assetClasses);
+        setCurrencies(references.currencies);
+        setLabels(references.tradeLabels);
+        setBooks(references.books);
+        setPortfolios(references.portfolios);
+        setCounterparties(references.counterparties);
       } catch (err) {
         console.error(err);
       } finally {
@@ -82,48 +84,58 @@ export default function TradeBooker() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const tradeData = {
-      ice_trade_id: formData.ice_trade_id, external_id: formData.external_id, trade_name: formData.trade_name,
-      description: formData.description, trade_date: formData.trade_date,
-      id_book: formData.id_book ? parseInt(formData.id_book) : null,
-      id_portfolio: formData.id_portfolio ? parseInt(formData.id_portfolio) : null,
-      id_ctpy: formData.id_ctpy ? parseInt(formData.id_ctpy) : null,
-      id_label: formData.id_label ? parseInt(formData.id_label) : null,
-      volume: formData.volume ? parseInt(formData.volume) : null,
-      ice_status: formData.ice_status, originating_action: formData.originating_action,
+
+    if (!selectedFund) {
+      alert('Please select a fund before booking a trade.');
+      return;
+    }
+
+    const direction = toNullableString(formData.direction) as BuySell | null;
+    const instrument = buildInstrumentPayload(formData, direction);
+    const premium = buildPremiumPayload(formData);
+
+    const payload: DiscTradeCreatePayload = {
+      id_org: defaultOrgId,
+      id_f: selectedFund,
+      booked_by: null,
+      status: 'booked',
+      id_book: Number.parseInt(formData.id_book, 10),
+      id_portfolio: toNullableInt(formData.id_portfolio),
+      id_ctpy: Number.parseInt(formData.id_ctpy, 10),
+      id_label: Number.parseInt(formData.id_label, 10),
+      ice_trade_id: toNullableString(formData.ice_trade_id),
+      external_id: toNullableString(formData.external_id),
+      description: toNullableString(formData.description),
+      trade_name: toNullableString(formData.trade_name),
+      trade_date: toNullableString(formData.trade_date),
+      creation_time: null,
+      last_update_time: null,
+      volume: toNullableInt(formData.volume),
+      ice_status: toNullableString(formData.ice_status) as IceTradeStatus | null,
+      originating_action: toNullableString(formData.originating_action) as OriginatingAction | null,
+      legs: [
+        {
+          id_ac: Number.parseInt(formData.id_ac, 10),
+          leg_id: formData.leg_id.trim(),
+          leg_code: null,
+          direction,
+          notional: toNullableFloat(formData.notional),
+          id_ccy: toNullableInt(formData.id_ccy),
+          instrument,
+          premium,
+          settlement: null,
+          fields: null,
+        },
+      ],
     };
 
-    const legData = {
-      leg_id: formData.leg_id,
-      id_ac: formData.id_ac ? parseInt(formData.id_ac) : null,
-      direction: formData.direction,
-      notional: formData.notional ? parseFloat(formData.notional) : null,
-      id_ccy: formData.id_ccy ? parseInt(formData.id_ccy) : null,
-    };
-
-    const instrumentData = {
-      instrument_code: formData.instrument_code, instrument_name: formData.instrument_name,
-      id_ac: formData.inst_id_ac ? parseInt(formData.inst_id_ac) : null,
-      category: formData.category, underlying: formData.underlying,
-      isin: formData.isin, bbg_ticker: formData.bbg_ticker,
-    };
-
-    const premiumData = {
-      amount: formData.prem_amount ? parseFloat(formData.prem_amount) : null,
-      id_ccy: formData.prem_id_ccy ? parseInt(formData.prem_id_ccy) : null,
-      date: formData.prem_date,
-      markup: formData.markup ? parseFloat(formData.markup) : null,
-      total: formData.total ? parseFloat(formData.total) : null,
-    };
-
-    const { bookTrade } = await import('../../services/tradeService');
-    const result = await bookTrade(tradeData, legData, instrumentData, premiumData);
-    
-    if (result.success) {
-      alert('Trade, Leg, Instrument & Premium successfully booked!');
-    } else {
-      alert('Error booking trade. Check console.');
+    try {
+      await bookTrade(payload);
+      alert('Trade booked successfully.');
+      clearForm();
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : 'Error booking trade.');
     }
   };
 
@@ -198,7 +210,7 @@ export default function TradeBooker() {
               <select id="id_book" className="floating-select" required disabled={loadingRefs} value={formData.id_book} onChange={handleChange}>
                 <option value="" disabled hidden>{loadingRefs ? 'Chargement...' : ''}</option>
                 {books.filter(b => selectedFund ? b.id_f === selectedFund : true).map((b) => (
-                  <option key={b.id_book || b.id} value={b.id_book || b.id}>{b.name}</option>
+                  <option key={b.id_book} value={b.id_book}>{b.name}</option>
                 ))}
               </select>
               <label htmlFor="id_book" className="floating-label">Book</label>
@@ -207,8 +219,8 @@ export default function TradeBooker() {
             <div className="floating-group">
               <select id="id_portfolio" className="floating-select" required disabled={loadingRefs} value={formData.id_portfolio} onChange={handleChange}>
                 <option value="" disabled hidden>{loadingRefs ? 'Chargement...' : ''}</option>
-                {portfolios.map((p) => (
-                  <option key={p.id_portfolio || p.id} value={p.id_portfolio || p.id}>{p.name}</option>
+                {portfolios.filter((p) => selectedFund ? p.id_f === selectedFund : true).map((p) => (
+                  <option key={p.id_book} value={p.id_book}>{p.name}</option>
                 ))}
               </select>
               <label htmlFor="id_portfolio" className="floating-label">Portfolio</label>
@@ -218,7 +230,7 @@ export default function TradeBooker() {
               <select id="id_ctpy" className="floating-select" required disabled={loadingRefs} value={formData.id_ctpy} onChange={handleChange}>
                 <option value="" disabled hidden>{loadingRefs ? 'Chargement...' : ''}</option>
                 {counterparties.map((c) => (
-                  <option key={c.id_ctpy || c.id} value={c.id_ctpy || c.id}>{c.name}</option>
+                  <option key={c.id_ctpy} value={c.id_ctpy}>{c.display_name}</option>
                 ))}
               </select>
               <label htmlFor="id_ctpy" className="floating-label">Counterparty</label>
@@ -228,7 +240,7 @@ export default function TradeBooker() {
               <select id="id_label" className="floating-select" required disabled={loadingRefs} value={formData.id_label} onChange={handleChange}>
                 <option value="" disabled hidden>{loadingRefs ? 'Chargement...' : ''}</option>
                 {labels.map((l) => (
-                  <option key={l.id_label || l.id} value={l.id_label || l.id}>{l.code}</option>
+                  <option key={l.id_label} value={l.id_label}>{l.code}</option>
                 ))}
               </select>
               <label htmlFor="id_label" className="floating-label">Label</label>
@@ -239,11 +251,21 @@ export default function TradeBooker() {
               <label htmlFor="volume" className="floating-label">Volume</label>
             </div>
             <div className="floating-group">
-              <input type="text" id="ice_status" className="floating-input" placeholder=" " value={formData.ice_status} onChange={handleChange} />
+              <select id="ice_status" className="floating-select" value={formData.ice_status} onChange={handleChange}>
+                <option value="" hidden></option>
+                <option value="Success">Success</option>
+                <option value="Failed">Failed</option>
+              </select>
               <label htmlFor="ice_status" className="floating-label">ICE Status</label>
             </div>
             <div className="floating-group">
-              <input type="text" id="originating_action" className="floating-input" placeholder=" " value={formData.originating_action} onChange={handleChange} />
+              <select id="originating_action" className="floating-select" value={formData.originating_action} onChange={handleChange}>
+                <option value="" hidden></option>
+                <option value="New">New</option>
+                <option value="Exercise">Exercise</option>
+                <option value="Amendment">Amendment</option>
+                <option value="Early termination">Early termination</option>
+              </select>
               <label htmlFor="originating_action" className="floating-label">Origin Action</label>
             </div>
           </div>
@@ -355,7 +377,7 @@ export default function TradeBooker() {
                   <option key={ccy.id_ccy} value={ccy.id_ccy}>{ccy.code}</option>
                 ))}
               </select>
-              <label htmlFor="prem_id_ccy" className="floating-label">Premium Date</label>
+              <label htmlFor="prem_id_ccy" className="floating-label">Premium Currency</label>
             </div>
             <div className="floating-group">
               <input type="date" id="prem_date" className="floating-input" placeholder=" " value={formData.prem_date} onChange={handleChange} />
@@ -379,4 +401,109 @@ export default function TradeBooker() {
       </form>
     </div>
   );
+}
+
+function toNullableString(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function toNullableInt(value: string): number | null {
+  if (!value.trim()) {
+    return null;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toNullableFloat(value: string): number | null {
+  if (!value.trim()) {
+    return null;
+  }
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function hasAnyValue(values: Array<string | number | null | undefined>): boolean {
+  return values.some((value) => {
+    if (typeof value === 'string') {
+      return value.trim().length > 0;
+    }
+    return value !== null && value !== undefined;
+  });
+}
+
+function buildInstrumentPayload(
+  formData: {
+    instrument_code: string;
+    instrument_name: string;
+    inst_id_ac: string;
+    category: string;
+    underlying: string;
+    isin: string;
+    bbg_ticker: string;
+    notional: string;
+    id_ccy: string;
+    trade_date: string;
+  },
+  direction: BuySell | null,
+) {
+  if (
+    !hasAnyValue([
+      formData.instrument_code,
+      formData.instrument_name,
+      formData.inst_id_ac,
+      formData.category,
+      formData.underlying,
+      formData.isin,
+      formData.bbg_ticker,
+    ])
+  ) {
+    return null;
+  }
+
+  return {
+    id_ac: toNullableInt(formData.inst_id_ac),
+    notional: toNullableFloat(formData.notional),
+    id_ccy: toNullableInt(formData.id_ccy),
+    buysell: direction,
+    i_type: toNullableString(formData.category),
+    trade_date: toNullableString(formData.trade_date),
+    isin: toNullableString(formData.isin),
+    bbg_ticker: toNullableString(formData.bbg_ticker),
+    payload_json: {
+      instrument_code: toNullableString(formData.instrument_code),
+      instrument_name: toNullableString(formData.instrument_name),
+      underlying: toNullableString(formData.underlying),
+    },
+  };
+}
+
+function buildPremiumPayload(formData: {
+  prem_amount: string;
+  prem_id_ccy: string;
+  prem_date: string;
+  markup: string;
+  total: string;
+}) {
+  if (
+    !hasAnyValue([
+      formData.prem_amount,
+      formData.prem_id_ccy,
+      formData.prem_date,
+      formData.markup,
+      formData.total,
+    ])
+  ) {
+    return null;
+  }
+
+  return {
+    amount: toNullableFloat(formData.prem_amount),
+    id_ccy: toNullableInt(formData.prem_id_ccy),
+    p_date: toNullableString(formData.prem_date),
+    markup: toNullableFloat(formData.markup),
+    total: toNullableFloat(formData.total),
+    payload_json: null,
+  };
 }

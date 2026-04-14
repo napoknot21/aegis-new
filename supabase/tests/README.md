@@ -1,5 +1,7 @@
 # Database Tests
 
+Use `supabase test db` to run pgTAP tests against the local database.
+
 Use this directory for SQL tests around:
 
 - row level security

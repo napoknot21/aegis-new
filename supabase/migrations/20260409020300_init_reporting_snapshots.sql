@@ -30,6 +30,8 @@
 -- Notes:
 --   - Tenant boundary = organisation.
 --   - Snapshot tables are tenant-scoped and fund-scoped.
+--   - ingestion_runs links the intraday reporting families in a later migration; SIMM stays daily and independent.
+--   - simm_snapshots.id_run remains a daily source-side load reference and is not linked to ingestion_runs.
 -- ============================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -98,7 +100,9 @@ CREATE TABLE IF NOT EXISTS simm_snapshot_rows (
     created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT fk_simm_row_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
-    CONSTRAINT fk_simm_row_snapshot FOREIGN KEY (id_org, id_simm_snapshot) REFERENCES simm_snapshots(id_org, id_simm_snapshot),
+    CONSTRAINT fk_simm_row_snapshot FOREIGN KEY (id_org, id_simm_snapshot)
+        REFERENCES simm_snapshots(id_org, id_simm_snapshot)
+        ON DELETE CASCADE,
     CONSTRAINT fk_simm_row_fund FOREIGN KEY (id_org, id_f) REFERENCES funds(id_org, id_f),
     CONSTRAINT fk_simm_row_ctpy FOREIGN KEY (id_org, id_ctpy) REFERENCES counterparties(id_org, id_ctpy),
 
@@ -137,7 +141,7 @@ CREATE TABLE IF NOT EXISTS expiries_snapshots (
 
     is_latest_for_day  BOOLEAN     NOT NULL DEFAULT FALSE,
     status             TEXT        NOT NULL DEFAULT 'loaded'
-                        CHECK (status IN ('loaded','validated','official_latest','replaced','failed')),
+                        CHECK (status IN ('loaded','validated','official','replaced','failed')),
     notes              TEXT,
     CONSTRAINT fk_exp_snapshot_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
     CONSTRAINT fk_exp_snapshot_fund FOREIGN KEY (id_org, id_f) REFERENCES funds(id_org, id_f),
@@ -186,7 +190,9 @@ CREATE TABLE IF NOT EXISTS expiries (
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT fk_exp_row_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
-    CONSTRAINT fk_exp_row_snapshot FOREIGN KEY (id_org, id_exp_snapshot) REFERENCES expiries_snapshots(id_org, id_exp_snapshot),
+    CONSTRAINT fk_exp_row_snapshot FOREIGN KEY (id_org, id_exp_snapshot)
+        REFERENCES expiries_snapshots(id_org, id_exp_snapshot)
+        ON DELETE CASCADE,
     CONSTRAINT fk_exp_row_ac FOREIGN KEY (id_ac) REFERENCES asset_classes(id_ac),
     CONSTRAINT fk_exp_row_ctpy FOREIGN KEY (id_org, id_ctpy) REFERENCES counterparties(id_org, id_ctpy),
     CONSTRAINT fk_exp_row_ccy FOREIGN KEY (id_ccy) REFERENCES currencies(id_ccy),
@@ -257,7 +263,8 @@ CREATE TABLE IF NOT EXISTS nav_estimated (
 
     CONSTRAINT fk_nav_est_row_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
     CONSTRAINT fk_nav_est_row_snapshot FOREIGN KEY (id_org, id_nav_est_snapshot)
-        REFERENCES nav_estimated_snapshots(id_org, id_nav_est_snapshot),
+        REFERENCES nav_estimated_snapshots(id_org, id_nav_est_snapshot)
+        ON DELETE CASCADE,
     CONSTRAINT fk_nav_est_row_fund FOREIGN KEY (id_org, id_f) REFERENCES funds(id_org, id_f),
 
     UNIQUE (uuid)
@@ -325,7 +332,8 @@ CREATE TABLE IF NOT EXISTS leverages (
 
     CONSTRAINT fk_leverage_row_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
     CONSTRAINT fk_leverage_row_snapshot FOREIGN KEY (id_org, id_leverage_snapshot)
-        REFERENCES leverages_snapshots(id_org, id_leverage_snapshot),
+        REFERENCES leverages_snapshots(id_org, id_leverage_snapshot)
+        ON DELETE CASCADE,
     CONSTRAINT fk_leverage_row_fund FOREIGN KEY (id_org, id_f) REFERENCES funds(id_org, id_f),
 
     UNIQUE (uuid)
@@ -407,7 +415,8 @@ CREATE TABLE IF NOT EXISTS leverages_per_trade (
 
     CONSTRAINT fk_leverages_trade_row_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
     CONSTRAINT fk_leverages_trade_row_snapshot FOREIGN KEY (id_org, id_leverage_trade_snapshot)
-        REFERENCES leverages_per_trade_snapshots(id_org, id_leverage_trade_snapshot),
+        REFERENCES leverages_per_trade_snapshots(id_org, id_leverage_trade_snapshot)
+        ON DELETE CASCADE,
     CONSTRAINT fk_leverages_trade_row_fund FOREIGN KEY (id_org, id_f) REFERENCES funds(id_org, id_f),
     CONSTRAINT fk_leverages_trade_row_ac FOREIGN KEY (id_ac) REFERENCES asset_classes(id_ac),
     CONSTRAINT fk_leverages_trade_row_ctpy FOREIGN KEY (id_org, id_ctpy) REFERENCES counterparties(id_org, id_ctpy),
@@ -485,7 +494,8 @@ CREATE TABLE IF NOT EXISTS leverages_per_underlying (
 
     CONSTRAINT fk_leverages_underlying_row_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
     CONSTRAINT fk_leverages_underlying_row_snapshot FOREIGN KEY (id_org, id_leverage_underlying_snapshot)
-        REFERENCES leverages_per_underlying_snapshots(id_org, id_leverage_underlying_snapshot),
+        REFERENCES leverages_per_underlying_snapshots(id_org, id_leverage_underlying_snapshot)
+        ON DELETE CASCADE,
     CONSTRAINT fk_leverages_underlying_row_fund FOREIGN KEY (id_org, id_f) REFERENCES funds(id_org, id_f),
     CONSTRAINT fk_leverages_underlying_row_ac FOREIGN KEY (id_ac) REFERENCES asset_classes(id_ac),
 
@@ -560,7 +570,9 @@ CREATE TABLE IF NOT EXISTS long_short_delta (
     created_at                   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT fk_long_short_delta_row_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
-    CONSTRAINT fk_long_short_delta_row_snapshot FOREIGN KEY (id_org, id_long_short_delta_snapshot) REFERENCES long_short_delta_snapshots(id_org, id_long_short_delta_snapshot),
+    CONSTRAINT fk_long_short_delta_row_snapshot FOREIGN KEY (id_org, id_long_short_delta_snapshot)
+        REFERENCES long_short_delta_snapshots(id_org, id_long_short_delta_snapshot)
+        ON DELETE CASCADE,
     CONSTRAINT fk_long_short_delta_row_fund FOREIGN KEY (id_org, id_f) REFERENCES funds(id_org, id_f),
 
     UNIQUE (uuid)
@@ -630,7 +642,9 @@ CREATE TABLE IF NOT EXISTS counterparty_concentration (
     created_at                     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT fk_ctpy_concentration_row_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
-    CONSTRAINT fk_ctpy_concentration_row_snapshot FOREIGN KEY (id_org, id_ctpy_concentration_snapshot) REFERENCES counterparty_concentration_snapshots(id_org, id_ctpy_concentration_snapshot),
+    CONSTRAINT fk_ctpy_concentration_row_snapshot FOREIGN KEY (id_org, id_ctpy_concentration_snapshot)
+        REFERENCES counterparty_concentration_snapshots(id_org, id_ctpy_concentration_snapshot)
+        ON DELETE CASCADE,
     CONSTRAINT fk_ctpy_concentration_row_fund FOREIGN KEY (id_org, id_f) REFERENCES funds(id_org, id_f),
     CONSTRAINT fk_ctpy_concentration_row_ctpy FOREIGN KEY (id_org, id_ctpy) REFERENCES counterparties(id_org, id_ctpy),
 

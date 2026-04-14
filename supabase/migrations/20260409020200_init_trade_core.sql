@@ -18,6 +18,9 @@
 -- Notes:
 --   - Tenant boundary = organisation.
 --   - Shared reference tables like currencies and asset_classes remain global.
+--   - trade_disc is the discretionary detail row for a trade.
+--   - trade_disc_legs is one-to-many from trade_disc.
+--   - each trade_disc_leg can have at most one optional row in each trade_disc_* child table.
 -- ============================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -344,7 +347,9 @@ CREATE TABLE IF NOT EXISTS trade_disc_premiums (
     payload_json   JSONB,
 
     CONSTRAINT fk_prem_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
-    CONSTRAINT fk_prem_leg FOREIGN KEY (id_org, id_leg) REFERENCES trade_disc_legs(id_org, id_leg),
+    CONSTRAINT fk_prem_leg FOREIGN KEY (id_org, id_leg)
+        REFERENCES trade_disc_legs(id_org, id_leg)
+        ON DELETE CASCADE,
     CONSTRAINT fk_prem_ccy FOREIGN KEY (id_ccy) REFERENCES currencies(id_ccy),
 
     UNIQUE (uuid),
@@ -371,7 +376,9 @@ CREATE TABLE IF NOT EXISTS trade_disc_fields (
     i_type          TEXT,
 
     CONSTRAINT fk_field_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
-    CONSTRAINT fk_field_leg FOREIGN KEY (id_org, id_leg) REFERENCES trade_disc_legs(id_org, id_leg),
+    CONSTRAINT fk_field_leg FOREIGN KEY (id_org, id_leg)
+        REFERENCES trade_disc_legs(id_org, id_leg)
+        ON DELETE CASCADE,
     CONSTRAINT fk_field_ccy FOREIGN KEY (id_ccy) REFERENCES currencies(id_ccy),
     CONSTRAINT fk_field_payout_ccy FOREIGN KEY (payout_ccy_id) REFERENCES currencies(id_ccy),
 
@@ -391,7 +398,7 @@ CREATE TABLE IF NOT EXISTS trade_disc_instruments (
 
     id_ac            BIGINT,
 
-    notional         TEXT,
+    notional         NUMERIC(18,6),
     id_ccy           BIGINT,
 
     buysell          TEXT  CHECK (buysell in ('Buy','Sell')),
@@ -405,7 +412,9 @@ CREATE TABLE IF NOT EXISTS trade_disc_instruments (
     payload_json     JSONB,
 
     CONSTRAINT fk_inst_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
-    CONSTRAINT fk_inst_leg FOREIGN KEY (id_org, id_leg) REFERENCES trade_disc_legs(id_org, id_leg),
+    CONSTRAINT fk_inst_leg FOREIGN KEY (id_org, id_leg)
+        REFERENCES trade_disc_legs(id_org, id_leg)
+        ON DELETE CASCADE,
     CONSTRAINT fk_inst_ac  FOREIGN KEY (id_ac) REFERENCES asset_classes(id_ac),
     CONSTRAINT fk_inst_ccy FOREIGN KEY (id_ccy) REFERENCES currencies(id_ccy),
 
@@ -432,7 +441,9 @@ CREATE TABLE IF NOT EXISTS trade_disc_settlements (
     payload_json   JSONB,
 
     CONSTRAINT fk_settle_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
-    CONSTRAINT fk_settle_leg FOREIGN KEY (id_org, id_leg) REFERENCES trade_disc_legs(id_org, id_leg),
+    CONSTRAINT fk_settle_leg FOREIGN KEY (id_org, id_leg)
+        REFERENCES trade_disc_legs(id_org, id_leg)
+        ON DELETE CASCADE,
     CONSTRAINT fk_settle_ccy FOREIGN KEY (id_ccy) REFERENCES currencies(id_ccy),
 
     UNIQUE (uuid),

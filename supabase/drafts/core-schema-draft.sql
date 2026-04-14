@@ -8,6 +8,7 @@
 --   - SIMM / Expiries naming alignment
 --
 -- This draft is not a ready-to-run initial migration yet.
+-- The canonical schema lives in ../migrations and may be ahead of this draft.
 -- It still depends on foundation tables created elsewhere:
 --   - organisations(id_org)
 --   - currencies(id_ccy)
@@ -393,7 +394,7 @@ CREATE TABLE IF NOT EXISTS trade_disc_instruments (
 
     id_ac            BIGINT,
 
-    notional         TEXT,
+    notional         NUMERIC(18,6),
     id_ccy           BIGINT,
 
     buysell          TEXT  CHECK (buysell in ('Buy','Sell')),
@@ -492,7 +493,7 @@ CREATE TABLE IF NOT EXISTS simm_snapshot_rows (
     as_of_date         DATE        NOT NULL,
 
     id_ctpy            BIGINT,
-    counterparty_raw   TEXT        NOT NULL, -- what is the idea of this column ? 
+    counterparty_raw   TEXT        NOT NULL,
 
     im_value           NUMERIC(18,6) NOT NULL,
     mv_value           NUMERIC(18,6),
@@ -544,7 +545,7 @@ CREATE TABLE IF NOT EXISTS expiries_snapshots (
 
     is_latest_for_day  BOOLEAN     NOT NULL DEFAULT FALSE,
     status             TEXT        NOT NULL DEFAULT 'loaded'
-                        CHECK (status IN ('loaded','validated','official_latest','replaced','failed')),
+                        CHECK (status IN ('loaded','validated','official','replaced','failed')),
     notes              TEXT,
     CONSTRAINT fk_exp_snapshot_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
     CONSTRAINT fk_exp_snapshot_fund FOREIGN KEY (id_org, id_f) REFERENCES funds(id_org, id_f),

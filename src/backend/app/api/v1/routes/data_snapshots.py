@@ -39,7 +39,7 @@ def list_dataset_snapshots (
         service : DataSnapshotServiceDep,
         id_f : FundQuery = None,
     
-    ) -> list[DataSnapshotSummaryResponse] :
+    ) -> List[DataSnapshotSummaryResponse] :
     """
     Endpoint to list all data snapshots for a given dataset and organization, with optional filtering by fund.
     """

@@ -79,3 +79,9 @@ CREATE TABLE IF NOT EXISTS asset_classes (
 CREATE INDEX IF NOT EXISTS idx_asset_classes_active ON asset_classes(is_active);
 CREATE INDEX IF NOT EXISTS idx_asset_classes_ice_code ON asset_classes(ice_code);
 CREATE INDEX IF NOT EXISTS idx_asset_classes_sort_order ON asset_classes(sort_order);
+
+
+-- ============================================================
+-- COUNTRIES (for future use, not yet seeded)
+-- ============================================================
+

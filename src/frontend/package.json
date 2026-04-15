@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.100.0",
     "lucide-react": "^1.0.1",
     "plotly.js": "^3.4.0",
     "react": "^19.2.4",

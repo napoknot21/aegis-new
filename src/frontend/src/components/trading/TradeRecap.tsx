@@ -1,19 +1,13 @@
 import { useState } from 'react';
 
-interface TradeRecord {
-  TradeId: string;
-  Portfolio: string;
-  ProductType: string;
-  Quantity: number;
-  Price: number;
-  Currency: string;
-  Status: string;
-  Date: string;
-  TradeDate: string;
-}
+import {
+  bookTradeRecap as submitTradeRecapBooking,
+  runTradeRecap as fetchTradeRecap,
+  type TradeRecapRecord,
+} from '../../services/recapService';
 
 export default function TradeRecap() {
-  const [data, setData] = useState<TradeRecord[]>([]);
+  const [data, setData] = useState<TradeRecapRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,31 +21,19 @@ export default function TradeRecap() {
     setError(null);
     setIsEditing(false);
     try {
-      const params = new URLSearchParams();
-      if (reportDate) params.append('date', reportDate);
-      if (tradeDate) params.append('trade_date', tradeDate);
-
-      const qs = params.toString() ? `?${params.toString()}` : '';
-      const response = await fetch(`http://localhost:8000/api/v1/recap/run${qs}`);
-      
-      if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`);
-      }
-      
-      const json = await response.json();
-      if (json.records) {
-        setData(json.records);
-      } else {
-         setData([]);
-      }
-    } catch (err: any) {
-      setError(err.message || 'Error fetching trade recap data');
+      const records = await fetchTradeRecap({
+        reportDate,
+        tradeDate,
+      });
+      setData(records);
+    } catch (err) {
+      setError(toErrorMessage(err, 'Error fetching trade recap data'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCellChange = (rowIndex: number, field: keyof TradeRecord, value: any) => {
+  const handleCellChange = (rowIndex: number, field: keyof TradeRecapRecord, value: string) => {
     const newData = [...data];
     newData[rowIndex] = { ...newData[rowIndex], [field]: value };
     // Auto-cast numerics if applicable
@@ -65,21 +47,11 @@ export default function TradeRecap() {
     setBooking(true);
     setError(null);
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/recap/book`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Booking failed: ${response.statusText}`);
-      }
-      
-      const result = await response.json();
+      const result = await submitTradeRecapBooking(data);
       alert(`Successfully booked ${result.booked_count} trades!`);
       setIsEditing(false);
-    } catch (err: any) {
-      setError(err.message || 'Error booking trades');
+    } catch (err) {
+      setError(toErrorMessage(err, 'Error booking trades'));
     } finally {
       setBooking(false);
     }
@@ -238,4 +210,8 @@ export default function TradeRecap() {
       </div>
     </div>
   );
+}
+
+function toErrorMessage(error: unknown, fallbackMessage: string): string {
+  return error instanceof Error ? error.message : fallbackMessage;
 }

@@ -1,24 +1,18 @@
 import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '../store/themeStore';
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { fetchLoginQuote, type LoginQuote } from '../services/systemService';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { theme } = useThemeStore();
-  const [quoteData, setQuoteData] = useState<{ quote: string; author: string } | null>(null);
+  const [quoteData, setQuoteData] = useState<LoginQuote | null>(null);
 
   useEffect(() => {
     async function fetchQuote() {
       try {
-        const { data, error } = await supabase
-          .from('quotes')
-          .select('quote, author');
-        
-        if (!error && data && data.length > 0) {
-          const randomIndex = Math.floor(Math.random() * data.length);
-          setQuoteData(data[randomIndex]);
-        }
+        const quote = await fetchLoginQuote();
+        setQuoteData(quote);
       } catch (err) {
         console.error('Error fetching quotes:', err);
       }

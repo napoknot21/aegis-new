@@ -1,5 +1,5 @@
-import { runtimeConfig } from '../config/runtime';
 import { apiGet } from '../lib/backendClient';
+import { getActiveOrgId } from '../store/appStore';
 import type {
   AssetClass,
   Book,
@@ -15,9 +15,6 @@ interface ReferenceQueryOptions {
   idOrg?: number;
   idFund?: number | null;
 }
-
-const defaultOrgId = runtimeConfig.defaultOrgId;
-
 export async function fetchAssetClasses(includeInactive = false): Promise<AssetClass[]> {
   return apiGet<AssetClass[]>('/reference/asset-classes', { include_inactive: includeInactive });
 }
@@ -27,32 +24,35 @@ export async function fetchCurrencies(includeInactive = false): Promise<Currency
 }
 
 export async function fetchFunds(options: ReferenceQueryOptions = {}): Promise<Fund[]> {
+  const idOrg = options.idOrg ?? getActiveOrgId();
   return apiGet<Fund[]>('/reference/funds', {
-    id_org: options.idOrg ?? defaultOrgId,
+    id_org: idOrg,
     include_inactive: options.includeInactive ?? false,
   });
 }
 
 export async function fetchBooks(options: ReferenceQueryOptions = {}): Promise<Book[]> {
+  const idOrg = options.idOrg ?? getActiveOrgId();
   return apiGet<Book[]>('/reference/books', {
-    id_org: options.idOrg ?? defaultOrgId,
+    id_org: idOrg,
     id_f: options.idFund ?? undefined,
     include_inactive: options.includeInactive ?? false,
   });
 }
 
-export async function fetchTradeLabels(idOrg = defaultOrgId): Promise<TradeLabel[]> {
+export async function fetchTradeLabels(idOrg = getActiveOrgId()): Promise<TradeLabel[]> {
   return apiGet<TradeLabel[]>('/trades/labels', { id_org: idOrg });
 }
 
 export async function fetchCounterparties(options: ReferenceQueryOptions = {}): Promise<Counterparty[]> {
+  const idOrg = options.idOrg ?? getActiveOrgId();
   return apiGet<Counterparty[]>('/reference/counterparties', {
-    id_org: options.idOrg ?? defaultOrgId,
+    id_org: idOrg,
     include_inactive: options.includeInactive ?? false,
   });
 }
 
-export async function fetchTradeFormReferences(idOrg = defaultOrgId): Promise<TradeFormReferences> {
+export async function fetchTradeFormReferences(idOrg = getActiveOrgId()): Promise<TradeFormReferences> {
   const [assetClasses, currencies, books, tradeLabels, counterparties] = await Promise.all([
     fetchAssetClasses(),
     fetchCurrencies(),

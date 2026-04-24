@@ -10,6 +10,7 @@ from app.domain.reference.entities import (
     FundRecord,
     TradeLabelRecord,
 )
+from app.domain.shared.entities import QuoteRecord
 
 from .base import PostgresUnitOfWorkBase
 
@@ -37,19 +38,41 @@ class PostgresReferenceUnitOfWork(PostgresUnitOfWorkBase):
         query += " ORDER BY sort_order, id_ccy"
         return [_build_currency_record(row) for row in self._fetch_all(query, params)]
 
-    def list_funds(self, *, id_org: int, include_inactive: bool) -> list[FundRecord]:
+    def list_funds(
+        self,
+        *,
+        id_org: int,
+        accessible_fund_ids: list[int] | None,
+        include_inactive: bool,
+    ) -> list[FundRecord]:
+        if accessible_fund_ids == []:
+            return []
+
         query = """
             SELECT id_f, id_org, id_ccy, name, code, fund_type, inception_date, is_active
             FROM funds
             WHERE id_org = %s
         """
         params: list[Any] = [id_org]
+        if accessible_fund_ids is not None:
+            query += " AND id_f = ANY(%s)"
+            params.append(accessible_fund_ids)
         if not include_inactive:
             query += " AND is_active = TRUE"
         query += " ORDER BY name, id_f"
         return [_build_fund_record(row) for row in self._fetch_all(query, params)]
 
-    def list_books(self, *, id_org: int, id_f: int | None, include_inactive: bool) -> list[BookRecord]:
+    def list_books(
+        self,
+        *,
+        id_org: int,
+        id_f: int | None,
+        accessible_fund_ids: list[int] | None,
+        include_inactive: bool,
+    ) -> list[BookRecord]:
+        if accessible_fund_ids == []:
+            return []
+
         query = """
             SELECT id_book, id_org, id_f, name, parent_id, is_active
             FROM books
@@ -59,6 +82,9 @@ class PostgresReferenceUnitOfWork(PostgresUnitOfWorkBase):
         if id_f is not None:
             query += " AND id_f = %s"
             params.append(id_f)
+        if accessible_fund_ids is not None:
+            query += " AND id_f = ANY(%s)"
+            params.append(accessible_fund_ids)
         if not include_inactive:
             query += " AND is_active = TRUE"
         query += " ORDER BY name, id_book"
@@ -87,6 +113,19 @@ class PostgresReferenceUnitOfWork(PostgresUnitOfWorkBase):
             query += " AND is_active = TRUE"
         query += " ORDER BY COALESCE(ice_name, ext_code), id_ctpy"
         return [_build_counterparty_record(row) for row in self._fetch_all(query, params)]
+
+    def get_random_quote(self) -> QuoteRecord | None:
+        """Get a random active quote for the login page"""
+        query = """
+            SELECT id, domain, author, quote
+            FROM quotes
+            ORDER BY RANDOM()
+            LIMIT 1
+        """
+        rows = self._fetch_all(query, [])
+        if not rows:
+            return None
+        return _build_quote_record(rows[0])
 
     def _fetch_all(self, query: str, params: list[Any]) -> list[dict[str, Any]]:
         connection = self._connection_or_raise()
@@ -164,4 +203,13 @@ def _build_counterparty_record(row: dict[str, Any]) -> CounterpartyRecord:
         ext_code=ext_code,
         is_active=bool(row["is_active"]),
         display_name=display_name,
+    )
+
+
+def _build_quote_record(row: dict[str, Any]) -> QuoteRecord:
+    return QuoteRecord(
+        id=int(row["id"]),
+        domain=row["domain"],
+        author=row["author"],
+        quote=row["quote"],
     )

@@ -3,7 +3,9 @@ import { NavLink } from 'react-router-dom';
 import { Activity, ShieldCheck, Microscope, Cpu, Users, Briefcase, ChevronLeft, ChevronRight } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useAppStore } from '../store/appStore';
+import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
+import { logout } from '../lib/authClient';
 import { fetchFunds } from '../services/referenceService';
 import type { Fund } from '../types/reference';
 import './Sidebar.css';
@@ -18,19 +20,46 @@ const TABS = [
 ];
 
 export default function Sidebar() {
-  const { selectedFund, globalDate, setSelectedFund, setGlobalDate } = useAppStore();
+  const { selectedOrg, selectedFund, globalDate, setSelectedOrg, setSelectedFund, setGlobalDate } = useAppStore();
+  const { isEnabled, account, session } = useAuthStore();
   const { theme } = useThemeStore();
   const [funds, setFunds] = useState<Fund[]>([]);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const organisations = session?.orgs ?? [];
 
   useEffect(() => {
-    fetchFunds().then((data) => {
-      setFunds(data);
-      if (data.length > 0 && !useAppStore.getState().selectedFund) {
-        useAppStore.getState().setSelectedFund(data[0].id_f);
-      }
-    });
-  }, []);
+    if (selectedOrg === null) {
+      setFunds([]);
+      return;
+    }
+
+    fetchFunds({ idOrg: selectedOrg })
+      .then((data) => {
+        setFunds(data);
+        if (data.length > 0) {
+          const currentFund = useAppStore.getState().selectedFund;
+          const matchingFund = data.find((item) => item.id_f === currentFund);
+          if (!matchingFund) {
+            useAppStore.getState().setSelectedFund(data[0].id_f);
+          }
+        } else {
+          useAppStore.getState().setSelectedFund(null);
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+        setFunds([]);
+        useAppStore.getState().setSelectedFund(null);
+      });
+  }, [selectedOrg]);
+
+  useEffect(() => {
+    if (selectedOrg !== null || session?.default_org_id === null || session?.default_org_id === undefined) {
+      return;
+    }
+
+    setSelectedOrg(session.default_org_id);
+  }, [selectedOrg, session?.default_org_id, setSelectedOrg]);
 
   return (
     <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
@@ -75,21 +104,72 @@ export default function Sidebar() {
             />
           </div>
           <div className="filter-group">
+            <label>Organisation</label>
+            <select
+              value={selectedOrg || ''}
+              onChange={(e) => setSelectedOrg(e.target.value ? Number.parseInt(e.target.value, 10) : null)}
+              className="sidebar-input"
+              disabled={organisations.length === 0}
+            >
+              {organisations.length > 0 && selectedOrg === null && (
+                <option value="" disabled>
+                  Select organisation
+                </option>
+              )}
+              {organisations.length === 0 ? (
+                <option value="">No access</option>
+              ) : (
+                organisations.map((org) => (
+                  <option key={org.id_org} value={org.id_org}>
+                    {org.org_name}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+          <div className="filter-group">
             <label>Fund</label>
             <select
               value={selectedFund || ''}
-              onChange={(e) => setSelectedFund(parseInt(e.target.value))}
+              onChange={(e) => setSelectedFund(e.target.value ? Number.parseInt(e.target.value, 10) : null)}
               className="sidebar-input"
+              disabled={selectedOrg === null || funds.length === 0}
             >
-              {funds.map(f => (
-                <option key={f.id_f} value={f.id_f}>{f.name}</option>
-              ))}
+              {selectedOrg === null ? (
+                <option value="">Select organisation first</option>
+              ) : funds.length === 0 ? (
+                <option value="">No funds available</option>
+              ) : (
+                funds.map((f) => (
+                  <option key={f.id_f} value={f.id_f}>
+                    {f.name}
+                  </option>
+                ))
+              )}
             </select>
           </div>
         </div>
       )}
 
       <div className="sidebar-footer">
+        {!isCollapsed && isEnabled && account && (
+          <div style={{ marginBottom: '12px', width: '100%', padding: '0 20px', boxSizing: 'border-box' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Signed in</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-primary)', marginBottom: '8px', wordBreak: 'break-word' }}>
+              {account.username}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                void logout();
+              }}
+              className="sidebar-input"
+              style={{ cursor: 'pointer' }}
+            >
+              Log out
+            </button>
+          </div>
+        )}
         <ThemeToggle />
       </div>
     </aside>

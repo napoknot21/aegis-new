@@ -1,14 +1,12 @@
-import { runtimeConfig } from '../config/runtime';
 import { apiGet, apiPost } from '../lib/backendClient';
+import { getActiveOrgId } from '../store/appStore';
 import type {
   DiscTradeAggregateResponse,
   DiscTradeCreatePayload,
   TradeSummary,
 } from '../types/trades';
 
-const defaultOrgId = runtimeConfig.defaultOrgId;
-
-export async function fetchTrades(idOrg = defaultOrgId): Promise<TradeSummary[]> {
+export async function fetchTrades(idOrg = getActiveOrgId()): Promise<TradeSummary[]> {
   return apiGet<TradeSummary[]>('/trades', { id_org: idOrg });
 }
 

@@ -1,23 +1,20 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-// import { PublicClientApplication } from '@azure/msal-browser';
-// import { MsalProvider } from '@azure/msal-react';
-// import { msalConfig } from './authConfig';
 import App from './App.tsx';
+import { initializeAuth } from './lib/authClient';
 import './index.css';
 
-// const msalInstance = new PublicClientApplication(msalConfig);
+async function bootstrap() {
+  await initializeAuth();
 
-// MSAL configuration is disabled for now.
-// msalInstance.initialize().then(() => {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      {/* <MsalProvider instance={msalInstance}> */}
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      {/* </MsalProvider> */}
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </StrictMode>,
   );
-// });
+}
+
+void bootstrap();

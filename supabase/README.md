@@ -28,7 +28,7 @@ Important defaults:
 Direct backend database URL:
 
 ```text
-postgresql://postgres:postgres@127.0.0.1:54322/postgres
+postgresql://postgres:<local-password>@127.0.0.1:54322/postgres
 ```
 
 ## Directory Structure

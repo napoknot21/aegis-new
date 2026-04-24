@@ -2,9 +2,15 @@ from __future__ import annotations
 
 from typing import Annotated, List
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 
-from app.api.dependencies import ReferenceServiceDep
+from app.api.dependencies import (
+    PrincipalDep,
+    ReferenceServiceDep,
+    assert_fund_access,
+    get_accessible_fund_scope,
+    resolve_id_org,
+)
 from app.domain.reference.schemas import (
     AssetClassResponse,
     BookResponse,
@@ -21,7 +27,10 @@ from app.domain.reference.schemas import (
 
 router = APIRouter(tags=["reference"])
 
-IdOrgQuery = Annotated[int, Query(..., gt=0, description="Organisation identifier.")]
+IdOrgQuery = Annotated[
+    int | None,
+    Query(description="Organisation identifier. If omitted and exactly one organisation is available, the backend infers it."),
+]
 FundQuery = Annotated[int | None, Query(gt=0, description="Optional fund filter.")]
 IncludeInactiveQuery = Annotated[
     bool,
@@ -53,35 +62,57 @@ def list_currencies(
 
 @router.get("/funds", response_model=List[FundResponse])
 def list_funds(
+    request: Request,
     service: ReferenceServiceDep,
-    id_org: IdOrgQuery,
+    principal: PrincipalDep,
+    id_org: IdOrgQuery = None,
     include_inactive: IncludeInactiveQuery = False,
 ) -> List[FundResponse]:
+    resolved_org_id = resolve_id_org(id_org=id_org, principal=principal, request=request)
+    accessible_fund_ids = get_accessible_fund_scope(id_org=resolved_org_id, principal=principal, request=request)
     return [
         build_fund_response(item)
-        for item in service.list_funds(id_org=id_org, include_inactive=include_inactive)
+        for item in service.list_funds(
+            id_org=resolved_org_id,
+            accessible_fund_ids=accessible_fund_ids,
+            include_inactive=include_inactive,
+        )
     ]
 
 
 @router.get("/books", response_model=List[BookResponse])
 def list_books(
+    request: Request,
     service: ReferenceServiceDep,
-    id_org: IdOrgQuery,
+    principal: PrincipalDep,
+    id_org: IdOrgQuery = None,
     id_f: FundQuery = None,
     include_inactive: IncludeInactiveQuery = False,
 ) -> List[BookResponse]:
+    resolved_org_id = resolve_id_org(id_org=id_org, principal=principal, request=request)
+    if id_f is not None:
+        assert_fund_access(id_org=resolved_org_id, id_f=id_f, principal=principal, request=request)
+    accessible_fund_ids = get_accessible_fund_scope(id_org=resolved_org_id, principal=principal, request=request)
     return [
         build_book_response(item)
-        for item in service.list_books(id_org=id_org, id_f=id_f, include_inactive=include_inactive)
+        for item in service.list_books(
+            id_org=resolved_org_id,
+            id_f=id_f,
+            accessible_fund_ids=accessible_fund_ids,
+            include_inactive=include_inactive,
+        )
     ]
 
 @router.get("/counterparties", response_model=List[CounterpartyResponse])
 def list_counterparties(
+    request: Request,
     service: ReferenceServiceDep,
-    id_org: IdOrgQuery,
+    principal: PrincipalDep,
+    id_org: IdOrgQuery = None,
     include_inactive: IncludeInactiveQuery = False,
 ) -> List[CounterpartyResponse]:
+    resolved_org_id = resolve_id_org(id_org=id_org, principal=principal, request=request)
     return [
         build_counterparty_response(item)
-        for item in service.list_counterparties(id_org=id_org, include_inactive=include_inactive)
+        for item in service.list_counterparties(id_org=resolved_org_id, include_inactive=include_inactive)
     ]

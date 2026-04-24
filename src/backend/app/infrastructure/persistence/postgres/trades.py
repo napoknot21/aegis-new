@@ -340,11 +340,19 @@ class PostgresTradeUnitOfWork(PostgresUnitOfWorkBase):
         except psycopg.Error as exc:
             raise translate_psycopg_error(exc, f"Could not create field block for leg {fields.id_leg}.") from exc
 
-    def list_trades(self, id_org: int) -> list[TradeMasterRecord]:
+    def list_trades(self, id_org: int, accessible_fund_ids: list[int] | None = None) -> list[TradeMasterRecord]:
+        if accessible_fund_ids == []:
+            return []
+
         connection = self._connection_or_raise()
+        params: list[Any] = [id_org]
+        fund_filter = ""
+        if accessible_fund_ids is not None:
+            fund_filter = " AND t.id_f = ANY(%s)"
+            params.append(accessible_fund_ids)
         with connection.cursor() as cursor:
             cursor.execute(
-                """
+                f"""
                 SELECT
                     t.id_trade,
                     t.id_org,
@@ -362,9 +370,10 @@ class PostgresTradeUnitOfWork(PostgresUnitOfWorkBase):
                   ON tt.id_org = t.id_org
                  AND tt.id_type = t.id_type
                 WHERE t.id_org = %s
+                {fund_filter}
                 ORDER BY t.booked_at DESC, t.id_trade DESC
                 """,
-                (id_org,),
+                params,
             )
             rows = cursor.fetchall()
         return [_build_trade_master_record(row) for row in rows]

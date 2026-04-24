@@ -25,9 +25,9 @@ class TradeApplicationService:
         with self._uow_factory() as uow:
             return uow.list_trade_types(id_org=id_org)
 
-    def list_trades(self, id_org: int):
+    def list_trades(self, id_org: int, accessible_fund_ids: list[int] | None = None):
         with self._uow_factory() as uow:
-            return uow.list_trades(id_org=id_org)
+            return uow.list_trades(id_org=id_org, accessible_fund_ids=accessible_fund_ids)
 
     def get_disc_trade(self, id_org: int, id_spe: int):
         with self._uow_factory() as uow:

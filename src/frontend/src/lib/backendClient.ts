@@ -1,3 +1,4 @@
+import { acquireBackendAccessToken } from './authClient';
 import { runtimeConfig } from '../config/runtime';
 
 type QueryValue = string | number | boolean | null | undefined;
@@ -39,12 +40,25 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+async function buildHeaders(baseHeaders: HeadersInit): Promise<HeadersInit> {
+  const accessToken = await acquireBackendAccessToken();
+
+  if (!accessToken) {
+    return baseHeaders;
+  }
+
+  return {
+    ...baseHeaders,
+    Authorization: `Bearer ${accessToken}`,
+  };
+}
+
 export async function apiGet<T>(path: string, query?: Record<string, QueryValue>): Promise<T> {
   const response = await fetch(buildUrl(path, query), {
     method: 'GET',
-    headers: {
+    headers: await buildHeaders({
       Accept: 'application/json',
-    },
+    }),
   });
 
   return parseResponse<T>(response);
@@ -53,10 +67,10 @@ export async function apiGet<T>(path: string, query?: Record<string, QueryValue>
 export async function apiPost<TResponse, TBody>(path: string, body: TBody): Promise<TResponse> {
   const response = await fetch(buildUrl(path), {
     method: 'POST',
-    headers: {
+    headers: await buildHeaders({
       'Content-Type': 'application/json',
       Accept: 'application/json',
-    },
+    }),
     body: JSON.stringify(body),
   });
 

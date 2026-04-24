@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, field
+import random
 
 from app.domain.reference.entities import (
     AssetClassRecord,
@@ -11,6 +12,7 @@ from app.domain.reference.entities import (
     FundRecord,
     TradeLabelRecord,
 )
+from app.domain.shared.entities import QuoteRecord
 
 
 def _default_asset_classes() -> list[AssetClassRecord]:
@@ -35,10 +37,20 @@ def _default_currencies() -> list[CurrencyRecord]:
     ]
 
 
+def _default_quotes() -> list[QuoteRecord]:
+    return [
+        QuoteRecord(1, "finance", "Abraham Lincoln", "Discipline is choosing between what you want now and what you want most."),
+        QuoteRecord(2, "finance", "Warren Buffett", "Risk comes from not knowing what you're doing."),
+        QuoteRecord(3, "finance", "Warren Buffett", "The first rule is not to lose. The second rule is not to forget the first rule."),
+        QuoteRecord(4, "finance", "Robert Arnott", "In investing, what is comfortable is rarely profitable."),
+    ]
+
+
 @dataclass(slots=True)
 class InMemoryReferenceStore:
     asset_classes: list[AssetClassRecord] = field(default_factory=_default_asset_classes)
     currencies: list[CurrencyRecord] = field(default_factory=_default_currencies)
+    quotes: list[QuoteRecord] = field(default_factory=_default_quotes)
     funds: list[FundRecord] = field(default_factory=list)
     books: list[BookRecord] = field(default_factory=list)
     trade_labels: list[TradeLabelRecord] = field(default_factory=list)
@@ -65,6 +77,7 @@ class InMemoryReferenceUnitOfWork:
             return
         self._store.asset_classes = deepcopy(self._working.asset_classes)
         self._store.currencies = deepcopy(self._working.currencies)
+        self._store.quotes = deepcopy(self._working.quotes)
         self._store.funds = deepcopy(self._working.funds)
         self._store.books = deepcopy(self._working.books)
         self._store.trade_labels = deepcopy(self._working.trade_labels)
@@ -87,14 +100,33 @@ class InMemoryReferenceUnitOfWork:
             return list(rows)
         return [row for row in rows if row.is_active]
 
-    def list_funds(self, *, id_org: int, include_inactive: bool) -> list[FundRecord]:
+    def list_funds(
+        self,
+        *,
+        id_org: int,
+        accessible_fund_ids: list[int] | None,
+        include_inactive: bool,
+    ) -> list[FundRecord]:
         rows = [row for row in self._state().funds if row.id_org == id_org]
+        if accessible_fund_ids is not None:
+            allowed = set(accessible_fund_ids)
+            rows = [row for row in rows if row.id_f in allowed]
         if include_inactive:
             return rows
         return [row for row in rows if row.is_active]
 
-    def list_books(self, *, id_org: int, id_f: int | None, include_inactive: bool) -> list[BookRecord]:
+    def list_books(
+        self,
+        *,
+        id_org: int,
+        id_f: int | None,
+        accessible_fund_ids: list[int] | None,
+        include_inactive: bool,
+    ) -> list[BookRecord]:
         rows = [row for row in self._state().books if row.id_org == id_org and (id_f is None or row.id_f == id_f)]
+        if accessible_fund_ids is not None:
+            allowed = set(accessible_fund_ids)
+            rows = [row for row in rows if row.id_f in allowed]
         if include_inactive:
             return rows
         return [row for row in rows if row.is_active]
@@ -107,6 +139,13 @@ class InMemoryReferenceUnitOfWork:
         if include_inactive:
             return rows
         return [row for row in rows if row.is_active]
+
+    def get_random_quote(self) -> QuoteRecord | None:
+        """Get a random active quote for the login page"""
+        rows = [row for row in self._state().quotes if row.is_active]
+        if not rows:
+            return None
+        return random.choice(rows)
 
     def _state(self) -> InMemoryReferenceStore:
         if self._working is None:

@@ -2,30 +2,57 @@ import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '../store/themeStore';
 import { useState, useEffect } from 'react';
 import { fetchLoginQuote, type LoginQuote } from '../services/systemService';
+import { login } from '../lib/authClient';
+import { useAuthStore } from '../store/authStore';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { theme } = useThemeStore();
   const [quoteData, setQuoteData] = useState<LoginQuote | null>(null);
+  const { isEnabled, isAuthenticated, isInitializing, sessionStatus, session, error, account } = useAuthStore();
 
   useEffect(() => {
+    let isMounted = true;
+
     async function fetchQuote() {
       try {
         const quote = await fetchLoginQuote();
-        setQuoteData(quote);
+        if (isMounted) {
+          setQuoteData(quote);
+        }
       } catch (err) {
         console.error('Error fetching quotes:', err);
       }
     }
-    
+
     fetchQuote();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const handleLogin = () => {
-    navigate('/trading');
+  useEffect(() => {
+    if (!isEnabled && !isInitializing) {
+      return;
+    }
+
+    if (isAuthenticated && sessionStatus === 'ready' && session && session.orgs.length > 0) {
+      navigate('/trading', { replace: true });
+    }
+  }, [isAuthenticated, isEnabled, isInitializing, navigate, session, sessionStatus]);
+
+  const handleLogin = async () => {
+    if (!isEnabled) {
+      navigate('/trading');
+      return;
+    }
+
+    await login();
   };
 
   const isLight = theme === 'light' || theme === 'white';
+  const signInLabel = isEnabled ? 'Sign in with Microsoft' : 'Enter Aegis';
 
   return (
     <div style={{ position: 'relative', height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', overflow: 'hidden' }}>
@@ -37,14 +64,27 @@ export default function LoginPage() {
         />
         <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>AEGIS System</h2>
         <p style={{ margin: '0 0 32px 0', color: 'var(--text-secondary)', textAlign: 'center' }}>Hedge Fund Management & Controls</p>
-        
-        <button 
+
+        <button
           onClick={handleLogin}
-          className="btn-primary" 
-          style={{ width: '100%', padding: '12px', fontSize: '16px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+          className="btn-primary"
+          disabled={isInitializing}
+          style={{ width: '100%', padding: '12px', fontSize: '16px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', opacity: isInitializing ? 0.7 : 1 }}
         >
-          Sign in
+          {isInitializing ? 'Initializing...' : signInLabel}
         </button>
+
+        {isEnabled && account && (
+          <p style={{ margin: '16px 0 0 0', color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center' }}>
+            Signed in as {account.username}
+          </p>
+        )}
+
+        {error && (
+          <p style={{ margin: '16px 0 0 0', color: '#dc2626', fontSize: '13px', textAlign: 'center' }}>
+            {error}
+          </p>
+        )}
       </div>
 
       {quoteData && (

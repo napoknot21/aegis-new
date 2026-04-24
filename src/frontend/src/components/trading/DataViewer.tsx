@@ -1,29 +1,37 @@
 import { useState, useEffect } from 'react';
 import { Filter, Search, Download } from 'lucide-react';
 import { fetchTrades } from '../../services/tradeService';
+import { useAppStore } from '../../store/appStore';
 import type { TradeSummary } from '../../types/trades';
 import './DataViewer.css';
 
 export default function DataViewer() {
+  const { selectedOrg } = useAppStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [trades, setTrades] = useState<TradeSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (selectedOrg === null) {
+      setTrades([]);
+      setLoading(false);
+      return;
+    }
+
     const loadData = async () => {
+      setLoading(true);
       try {
-        const data = await fetchTrades();
-        if (data && data.length > 0) {
-          setTrades(data);
-        }
+        const data = await fetchTrades(selectedOrg);
+        setTrades(data ?? []);
       } catch (err) {
         console.error(err);
+        setTrades([]);
       } finally {
         setLoading(false);
       }
     };
     loadData();
-  }, []);
+  }, [selectedOrg]);
 
   const filteredTrades = trades.filter(t => 
     String(t.id_spe).includes(searchTerm) ||

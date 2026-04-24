@@ -25,6 +25,12 @@ class Settings(BaseSettings) :
     allowed_origins_raw : str = "http://localhost:5173,http://localhost:3000"
     persistence_backend : Literal["auto", "memory", "postgres"] = "auto"
     database_url : str | None = None
+    auth_enabled : bool = False
+    auth_authority : str | None = None
+    auth_tenant_id : str | None = None
+    auth_client_id : str | None = None
+    auth_allowed_audiences_raw : str = ""
+    auth_admin_role_codes_raw : str = "super_admin,org_admin,tech_admin"
 
     model_config = SettingsConfigDict(
         env_prefix="AEGIS_",
@@ -48,6 +54,30 @@ class Settings(BaseSettings) :
         if self.persistence_backend == "auto":
             return "postgres" if self.database_url else "memory"
         return self.persistence_backend
+
+    @property
+    def auth_allowed_audiences(self) -> List[str]:
+        audiences = [
+            audience.strip()
+            for audience in self.auth_allowed_audiences_raw.split(",")
+            if audience.strip()
+        ]
+
+        if audiences:
+            return audiences
+
+        if self.auth_client_id:
+            return [self.auth_client_id, f"api://{self.auth_client_id}"]
+
+        return []
+
+    @property
+    def auth_admin_role_codes(self) -> List[str]:
+        return [
+            role_code.strip().lower()
+            for role_code in self.auth_admin_role_codes_raw.split(",")
+            if role_code.strip()
+        ]
 
 
 @lru_cache(maxsize=1)

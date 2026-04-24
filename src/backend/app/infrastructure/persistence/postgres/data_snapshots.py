@@ -188,6 +188,7 @@ class PostgresDataSnapshotUnitOfWork(PostgresUnitOfWorkBase):
         self,
         dataset: DatasetCode,
         id_org: int,
+        accessible_fund_ids: list[int] | None = None,
         id_f: int | None = None,
         status: SnapshotStatus | None = None,
         is_official: bool | None = None,
@@ -197,8 +198,13 @@ class PostgresDataSnapshotUnitOfWork(PostgresUnitOfWorkBase):
     ) -> list[DataSnapshotRecord]:
         mapping = _SNAPSHOT_SQL[dataset]
         connection = self._connection_or_raise()
+        if accessible_fund_ids == []:
+            return []
         filters = ["id_org = %s"]
         params: list[Any] = [id_org]
+        if accessible_fund_ids is not None:
+            filters.append("id_f = ANY(%s)")
+            params.append(accessible_fund_ids)
         if id_f is not None:
             filters.append("id_f = %s")
             params.append(id_f)

@@ -25,6 +25,7 @@ class DataSnapshotUnitOfWork(Protocol):
         self,
         dataset: DatasetCode,
         id_org: int,
+        accessible_fund_ids: list[int] | None = None,
         id_f: int | None = None,
         status: SnapshotStatus | None = None,
         is_official: bool | None = None,

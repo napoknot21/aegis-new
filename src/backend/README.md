@@ -66,7 +66,7 @@ AEGIS_HOST=0.0.0.0
 AEGIS_PORT=8000
 AEGIS_ALLOWED_ORIGINS_RAW=http://localhost:5173,http://127.0.0.1:5173
 AEGIS_PERSISTENCE_BACKEND=postgres
-AEGIS_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+AEGIS_DATABASE_URL=postgresql://postgres:<local-password>@127.0.0.1:54322/postgres
 ```
 
 Meaning:

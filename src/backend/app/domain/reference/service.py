@@ -15,13 +15,29 @@ class ReferenceApplicationService:
         with self._uow_factory() as uow:
             return uow.list_currencies(include_inactive=include_inactive)
 
-    def list_funds(self, *, id_org: int, include_inactive: bool):
+    def list_funds(self, *, id_org: int, accessible_fund_ids: list[int] | None, include_inactive: bool):
         with self._uow_factory() as uow:
-            return uow.list_funds(id_org=id_org, include_inactive=include_inactive)
+            return uow.list_funds(
+                id_org=id_org,
+                accessible_fund_ids=accessible_fund_ids,
+                include_inactive=include_inactive,
+            )
 
-    def list_books(self, *, id_org: int, id_f: int | None, include_inactive: bool):
+    def list_books(
+        self,
+        *,
+        id_org: int,
+        id_f: int | None,
+        accessible_fund_ids: list[int] | None,
+        include_inactive: bool,
+    ):
         with self._uow_factory() as uow:
-            return uow.list_books(id_org=id_org, id_f=id_f, include_inactive=include_inactive)
+            return uow.list_books(
+                id_org=id_org,
+                id_f=id_f,
+                accessible_fund_ids=accessible_fund_ids,
+                include_inactive=include_inactive,
+            )
 
     def list_trade_labels(self, *, id_org: int):
         with self._uow_factory() as uow:

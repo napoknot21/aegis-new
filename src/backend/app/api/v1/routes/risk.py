@@ -7,6 +7,8 @@ from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel
 from psycopg.rows import dict_row
 
+from app.api.dependencies import PrincipalDep, assert_fund_access, resolve_id_org
+
 
 router = APIRouter(tags=["risk"])
 
@@ -47,9 +49,12 @@ class ControlLevelResponse(BaseModel):
 @router.get("/controls", response_model=list[ControlLevelResponse])
 def list_risk_controls(
     request: Request,
+    principal: PrincipalDep,
     id_f: int = Query(..., gt=0),
-    id_org: int = Query(..., gt=0),
+    id_org: int | None = Query(default=None, gt=0),
 ) -> list[ControlLevelResponse]:
+    resolved_org_id = resolve_id_org(id_org=id_org, principal=principal, request=request)
+    assert_fund_access(id_org=resolved_org_id, id_f=id_f, principal=principal, request=request)
     settings = request.app.state.settings
     if settings.resolved_persistence_backend != "postgres" or not settings.database_url:
         return []
@@ -90,7 +95,7 @@ def list_risk_controls(
                       AND l.is_active = TRUE
                     ORDER BY l.level_rank, l.id_level
                     """,
-                    (id_f, id_org),
+                    (id_f, resolved_org_id),
                 )
                 rows = cursor.fetchall()
     except psycopg.errors.UndefinedTable:

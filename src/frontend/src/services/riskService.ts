@@ -1,5 +1,5 @@
-import { runtimeConfig } from '../config/runtime';
 import { apiGet } from '../lib/backendClient';
+import { getActiveOrgId } from '../store/appStore';
 
 export interface RiskCategory {
   id_cat: number;
@@ -37,6 +37,6 @@ export interface ControlLevel {
 export async function fetchFundControls(fundId: number): Promise<ControlLevel[]> {
   return apiGet<ControlLevel[]>('/risk/controls', {
     id_f: fundId,
-    id_org: runtimeConfig.defaultOrgId,
+    id_org: getActiveOrgId(),
   });
 }

@@ -58,6 +58,7 @@ class InMemoryDataSnapshotUnitOfWork:
         self,
         dataset: DatasetCode,
         id_org: int,
+        accessible_fund_ids: list[int] | None = None,
         id_f: int | None = None,
         status: SnapshotStatus | None = None,
         is_official: bool | None = None,
@@ -70,6 +71,9 @@ class InMemoryDataSnapshotUnitOfWork:
             for snapshot in self._state().snapshots.values()
             if snapshot.dataset == dataset and snapshot.id_org == id_org and (id_f is None or snapshot.id_f == id_f)
         ]
+        if accessible_fund_ids is not None:
+            allowed = set(accessible_fund_ids)
+            items = [snapshot for snapshot in items if snapshot.id_f in allowed]
         if status is not None:
             items = [snapshot for snapshot in items if snapshot.status == status]
         if is_official is not None:

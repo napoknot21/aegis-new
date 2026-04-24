@@ -171,8 +171,16 @@ CREATE TABLE IF NOT EXISTS trade_types (
 
     name        TEXT        NOT NULL,
     code        TEXT        NOT NULL,
+    description TEXT,
+
+    sort_order  INTEGER     NOT NULL DEFAULT 100,
+    is_active   BOOLEAN     NOT NULL DEFAULT TRUE,
+
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT fk_trade_type_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
+    CONSTRAINT trade_types_code_format_check CHECK (code = upper(code) AND code ~ '^[A-Z][A-Z0-9_]{1,31}$'),
 
     UNIQUE (uuid),
     UNIQUE (id_org, id_type),
@@ -180,6 +188,38 @@ CREATE TABLE IF NOT EXISTS trade_types (
 
 );
 CREATE INDEX IF NOT EXISTS idx_trade_types_org ON trade_types(id_org);
+CREATE INDEX IF NOT EXISTS idx_trade_types_org_active_sort ON trade_types(id_org, is_active, sort_order, code);
+
+COMMENT ON TABLE trade_types IS
+    'Dynamic per-organisation trade type catalogue. Add a row to support a new type; set is_active = false to retire a type while preserving historical trades.';
+COMMENT ON COLUMN trade_types.code IS
+    'Stable uppercase trade type code used by APIs and downstream workflows, for example DISC or ADV.';
+COMMENT ON COLUMN trade_types.is_active IS
+    'When false, the type is retired for new trades but remains available for historical trades through existing foreign keys.';
+
+INSERT INTO trade_types (
+    id_org,
+    name,
+    code,
+    description,
+    sort_order,
+    is_active
+)
+SELECT
+    org.id_org,
+    seed.name,
+    seed.code,
+    seed.description,
+    seed.sort_order,
+    TRUE
+FROM organisations AS org
+CROSS JOIN (
+    VALUES
+        ('Discretionary', 'DISC', 'Discretionary trade workflow type', 10),
+        ('Advisory', 'ADV', 'Advisory trade workflow type', 20)
+) AS seed(name, code, description, sort_order)
+ON CONFLICT (id_org, code)
+DO NOTHING;
 
 
 CREATE TABLE IF NOT EXISTS trade_disc_labels (

@@ -7,17 +7,17 @@ import './RiskDashboard.css';
 
 export default function ControlsDashboard() {
   const { theme } = useThemeStore();
-  const { selectedFund, globalDate } = useAppStore();
-  
+  const { selectedOrg, selectedFund, globalDate } = useAppStore();
+
   const [loading, setLoading] = useState(false);
   const [controlsCache, setControlsCache] = useState<ControlLevel[]>([]);
   const [activeTab, setActiveTab] = useState<string>('');
 
-  const isDark = theme !== 'light' && theme !== 'white'; 
+  const isDark = theme !== 'light' && theme !== 'white';
   const fontColor = isDark ? '#9ca3af' : '#4b5563';
   const gridColor = isDark ? '#2e303a' : '#e5e7eb';
-  const paperBg = 'rgba(0,0,0,0)'; 
-  const plotBg = 'rgba(0,0,0,0)';   
+  const paperBg = 'rgba(0,0,0,0)';
+  const plotBg = 'rgba(0,0,0,0)';
 
   const layoutTpl = {
     paper_bgcolor: paperBg,
@@ -29,11 +29,15 @@ export default function ControlsDashboard() {
   };
 
   useEffect(() => {
-    if (!selectedFund) return;
-    
+    if (!selectedOrg || !selectedFund) {
+      setControlsCache([]);
+      setLoading(false);
+      return;
+    }
+
     let isMounted = true;
     setLoading(true);
-    
+
     fetchFundControls(selectedFund).then(data => {
       if (!isMounted) return;
       setControlsCache(data);
@@ -42,15 +46,15 @@ export default function ControlsDashboard() {
       console.error(err);
       if (isMounted) setLoading(false);
     });
-    
+
     return () => { isMounted = false; };
-  }, [selectedFund]);
+  }, [selectedFund, selectedOrg]);
 
   // Grouping logic: map RiskCategory name to its Definition & associated Levels
   const groupedData = useMemo(() => {
 
     const map = new Map<string, { category: RiskCategory, controls: Map<number, { definition: ControlDefinition, levels: ControlLevel[] }> }>();
-    
+
     (controlsCache || []).forEach(level => {
       const def = level?.risk_control_definitions;
       if (!def) return;

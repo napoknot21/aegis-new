@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from app.core.config import Settings, get_settings
 from app.domain.data_snapshots.service import DataSnapshotApplicationService
 from app.domain.reference.service import ReferenceApplicationService
+from app.domain.shared.service import QuotesApplicationService
 from app.domain.trades.service import TradeApplicationService
 from app.infrastructure.persistence.memory.data_snapshot_store import InMemoryDataSnapshotStore, InMemoryDataSnapshotUnitOfWork
 from app.infrastructure.persistence.memory.reference_store import InMemoryReferenceStore, InMemoryReferenceUnitOfWork
@@ -21,6 +22,7 @@ class Container:
     trade_service: TradeApplicationService
     data_snapshot_service: DataSnapshotApplicationService
     reference_service: ReferenceApplicationService
+    quotes_service: QuotesApplicationService
 
 
 def build_container(settings: Settings | None = None) -> Container:
@@ -39,10 +41,14 @@ def build_container(settings: Settings | None = None) -> Container:
         reference_service = ReferenceApplicationService(
             uow_factory=lambda: PostgresReferenceUnitOfWork(settings.database_url)
         )
+        quotes_service = QuotesApplicationService(
+            uow_factory=lambda: PostgresReferenceUnitOfWork(settings.database_url)
+        )
         return Container(
             trade_service=trade_service,
             data_snapshot_service=data_snapshot_service,
             reference_service=reference_service,
+            quotes_service=quotes_service,
         )
 
     trade_store = InMemoryTradeStore()
@@ -58,8 +64,12 @@ def build_container(settings: Settings | None = None) -> Container:
     reference_service = ReferenceApplicationService(
         uow_factory=lambda: InMemoryReferenceUnitOfWork(reference_store)
     )
+    quotes_service = QuotesApplicationService(
+        uow_factory=lambda: PostgresReferenceUnitOfWork(settings.database_url) if settings.database_url else None
+    )
     return Container(
         trade_service=trade_service,
         data_snapshot_service=data_snapshot_service,
         reference_service=reference_service,
+        quotes_service=quotes_service,
     )

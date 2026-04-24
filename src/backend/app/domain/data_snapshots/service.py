@@ -21,6 +21,7 @@ class DataSnapshotApplicationService:
         self,
         dataset: DatasetCode,
         id_org: int,
+        accessible_fund_ids: list[int] | None = None,
         id_f: int | None = None,
         status: SnapshotStatus | None = None,
         is_official: bool | None = None,
@@ -33,6 +34,7 @@ class DataSnapshotApplicationService:
             return uow.list_snapshots(
                 dataset=dataset,
                 id_org=id_org,
+                accessible_fund_ids=accessible_fund_ids,
                 id_f=id_f,
                 status=status,
                 is_official=is_official,

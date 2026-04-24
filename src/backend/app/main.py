@@ -8,6 +8,7 @@ from app.api.router import router as api_router
 from app.bootstrap.container import build_container
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.infrastructure.identity import EntraTokenValidator
 
 
 def create_app() -> FastAPI:
@@ -22,6 +23,19 @@ def create_app() -> FastAPI:
 
     app.state.settings = settings
     app.state.container = build_container(settings)
+    app.state.token_validator = None
+
+    if settings.auth_enabled:
+        if not settings.auth_authority or not settings.auth_tenant_id or not settings.auth_allowed_audiences:
+            raise RuntimeError(
+                "AEGIS auth is enabled but the authority, tenant ID, or allowed audiences are not configured."
+            )
+
+        app.state.token_validator = EntraTokenValidator(
+            authority=settings.auth_authority,
+            tenant_id=settings.auth_tenant_id,
+            allowed_audiences=settings.auth_allowed_audiences,
+        )
 
     app.add_middleware(
         CORSMiddleware,

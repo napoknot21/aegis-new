@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { runtimeConfig } from '../../config/runtime';
+import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react';
 import { fetchTradeFormReferences } from '../../services/referenceService';
 import { bookTrade } from '../../services/tradeService';
 import { useAppStore } from '../../store/appStore';
@@ -8,8 +7,8 @@ import type { BuySell, DiscTradeCreatePayload, IceTradeStatus, OriginatingAction
 import './TradeBooker.css';
 
 export default function TradeBooker() {
-  const { selectedFund } = useAppStore();
-  const defaultOrgId = runtimeConfig.defaultOrgId;
+  const { selectedFund, selectedOrg } = useAppStore();
+  const activeOrgId = selectedOrg;
 
   const [formData, setFormData] = useState({
     // Trade Disc (General)
@@ -60,9 +59,21 @@ export default function TradeBooker() {
   const [loadingRefs, setLoadingRefs] = useState(true);
 
   useEffect(() => {
+    if (activeOrgId === null) {
+      setAssetClasses([]);
+      setCurrencies([]);
+      setLabels([]);
+      setBooks([]);
+      setPortfolios([]);
+      setCounterparties([]);
+      setLoadingRefs(false);
+      return;
+    }
+
     const loadData = async () => {
+      setLoadingRefs(true);
       try {
-        const references = await fetchTradeFormReferences();
+        const references = await fetchTradeFormReferences(activeOrgId);
         setAssetClasses(references.assetClasses);
         setCurrencies(references.currencies);
         setLabels(references.tradeLabels);
@@ -76,14 +87,19 @@ export default function TradeBooker() {
       }
     };
     loadData();
-  }, []);
+  }, [activeOrgId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    if (activeOrgId === null) {
+      alert('Please select an organisation before booking a trade.');
+      return;
+    }
 
     if (!selectedFund) {
       alert('Please select a fund before booking a trade.');
@@ -95,7 +111,7 @@ export default function TradeBooker() {
     const premium = buildPremiumPayload(formData);
 
     const payload: DiscTradeCreatePayload = {
-      id_org: defaultOrgId,
+      id_org: activeOrgId,
       id_f: selectedFund,
       booked_by: null,
       status: 'booked',
@@ -152,9 +168,15 @@ export default function TradeBooker() {
   return (
     <div className="booker-container fade-in">
       <div className="booker-header">
-        <h2>Trade Booker</h2>
+          <h2>Trade Booker</h2>
         <p>Hedge fund trade booking form.</p>
       </div>
+
+      {activeOrgId === null && (
+        <div className="glass-panel" style={{ padding: '16px 20px', marginBottom: '24px', color: 'var(--text-secondary)' }}>
+          Select an organisation in the sidebar to load reference data and book trades.
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: '20px', marginBottom: '24px' }}>
         <div 

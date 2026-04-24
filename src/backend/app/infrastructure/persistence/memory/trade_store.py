@@ -146,8 +146,11 @@ class InMemoryTradeUnitOfWork:
             raise ConflictError(f"Fields block already exists for leg {fields.id_leg}.")
         self._working.disc_fields[key] = fields
 
-    def list_trades(self, id_org: int) -> list[TradeMasterRecord]:
+    def list_trades(self, id_org: int, accessible_fund_ids: list[int] | None = None) -> list[TradeMasterRecord]:
         records = [record for (org_id, _), record in self._working.master_trades.items() if org_id == id_org]
+        if accessible_fund_ids is not None:
+            allowed = set(accessible_fund_ids)
+            records = [record for record in records if record.id_f in allowed]
         return sorted(records, key=lambda item: item.booked_at, reverse=True)
 
     def get_disc_trade(self, id_org: int, id_spe: int) -> DiscTradeAggregate | None:

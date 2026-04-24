@@ -88,6 +88,12 @@ BEFORE UPDATE ON access_roles
 FOR EACH ROW
 EXECUTE FUNCTION set_row_updated_at();
 
+DROP TRIGGER IF EXISTS trg_trade_types_set_updated_at ON trade_types;
+CREATE TRIGGER trg_trade_types_set_updated_at
+BEFORE UPDATE ON trade_types
+FOR EACH ROW
+EXECUTE FUNCTION set_row_updated_at();
+
 
 -- ============================================================
 -- SINGLE-PRIMARY / NORMALIZED EMAIL GUARANTEES

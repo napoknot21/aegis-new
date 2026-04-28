@@ -3,7 +3,7 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET search_path = extensions, public;
 
-SELECT plan(17);
+SELECT plan(18);
 
 INSERT INTO currencies (
     id_ccy,
@@ -510,7 +510,9 @@ INSERT INTO leverages_per_trade (
     as_of_ts,
     trade_id,
     id_spe,
+    id_leg,
     ice_trade_id,
+    ice_leg_id,
     gross_leverage
 )
 VALUES
@@ -522,7 +524,9 @@ VALUES
         TIMESTAMPTZ '2026-04-28 10:00:00+00',
         940001,
         940001,
+        940001,
         'ICE-TRADE-940001',
+        'ICE-LEG-940001',
         2.50
     );
 
@@ -534,6 +538,16 @@ SELECT is(
     ),
     940001::BIGINT,
     'leverages_per_trade can link back to the source trade'
+);
+
+SELECT is(
+    (
+        SELECT id_leg
+        FROM leverages_per_trade
+        WHERE id_leverage_trade_row = 940001
+    ),
+    940001::BIGINT,
+    'leverages_per_trade can link back to the source trade leg'
 );
 
 DELETE FROM ingestion_runs

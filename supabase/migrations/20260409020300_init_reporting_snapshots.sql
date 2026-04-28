@@ -5,6 +5,9 @@
 -- Scope:
 --   - simm_snapshots
 --   - simm_snapshot_rows
+--
+--   - aum_snapshots
+--   - aum_rows
 
 --   - expiries_snapshots
 --   - expiries
@@ -33,12 +36,14 @@
 --   - asset_classes(id_ac)
 --   - funds(id_org, id_f)
 --   - counterparties(id_org, id_ctpy)
+--   - trade_spe(id_org, id_spe)
+--   - trade_disc_legs(id_org, id_leg)
 --
 -- Notes:
 --   - Tenant boundary = organisation.
 --   - Snapshot tables are tenant-scoped and fund-scoped.
 --   - ingestion_runs links the intraday reporting families in a later migration; SIMM stays daily and independent.
---   - simm_snapshots.id_run remains a daily source-side load reference and is not linked to ingestion_runs.
+--   - simm_snapshots.id_run and aum_snapshots.id_run remain daily source-side load references and are not linked to ingestion_runs.
 -- ============================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -123,6 +128,87 @@ CREATE INDEX IF NOT EXISTS idx_simm_snapshot_rows_fund ON simm_snapshot_rows(id_
 
 
 -- ============================================================
+-- AUM
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS aum_snapshots (
+
+    id_aum_snapshot      BIGSERIAL   PRIMARY KEY,
+    uuid                 UUID        NOT NULL DEFAULT uuid_generate_v4(),
+    id_org               BIGINT      NOT NULL,
+
+    id_run               BIGINT      NOT NULL,
+    id_f                 BIGINT      NOT NULL,
+
+    as_of_date           DATE        NOT NULL,
+    source_name          TEXT        NOT NULL DEFAULT 'libapi',
+
+    source_file_name     TEXT,
+    source_generated_at  TIMESTAMPTZ,
+    loaded_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    status               TEXT        NOT NULL DEFAULT 'loaded'
+                         CHECK (status IN ('loaded','validated','official','replaced','failed')),
+
+    row_count            INTEGER     NOT NULL DEFAULT 0,
+    is_official          BOOLEAN     NOT NULL DEFAULT FALSE,
+
+    notes                TEXT,
+
+    CONSTRAINT fk_aum_snapshot_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
+    CONSTRAINT fk_aum_snapshot_fund FOREIGN KEY (id_org, id_f) REFERENCES funds(id_org, id_f),
+
+    UNIQUE (uuid),
+    UNIQUE (id_org, id_aum_snapshot),
+    UNIQUE (id_org, id_aum_snapshot, id_f, as_of_date)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_aum_snapshots_official_per_day
+    ON aum_snapshots(id_org, id_f, as_of_date)
+    WHERE is_official;
+
+CREATE INDEX IF NOT EXISTS idx_aum_snapshots_org ON aum_snapshots(id_org);
+CREATE INDEX IF NOT EXISTS idx_aum_snapshots_fund ON aum_snapshots(id_org, id_f);
+CREATE INDEX IF NOT EXISTS idx_aum_snapshots_as_of_date ON aum_snapshots(id_org, as_of_date);
+
+
+CREATE TABLE IF NOT EXISTS aum_rows (
+
+    id_aum_row           BIGSERIAL   PRIMARY KEY,
+    uuid                 UUID        NOT NULL DEFAULT uuid_generate_v4(),
+    id_org               BIGINT      NOT NULL,
+
+    id_aum_snapshot      BIGINT      NOT NULL,
+    id_f                 BIGINT      NOT NULL,
+    as_of_date           DATE        NOT NULL,
+
+    aum_value            NUMERIC(18,6),
+    id_ccy               BIGINT,
+    valuation_ts         TIMESTAMPTZ,
+
+    raw_payload_json     JSONB,
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT fk_aum_row_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
+    CONSTRAINT fk_aum_row_snapshot FOREIGN KEY (id_org, id_aum_snapshot)
+        REFERENCES aum_snapshots(id_org, id_aum_snapshot)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_aum_row_snapshot_match FOREIGN KEY (id_org, id_aum_snapshot, id_f, as_of_date)
+        REFERENCES aum_snapshots(id_org, id_aum_snapshot, id_f, as_of_date),
+    CONSTRAINT fk_aum_row_fund FOREIGN KEY (id_org, id_f) REFERENCES funds(id_org, id_f),
+    CONSTRAINT fk_aum_row_ccy FOREIGN KEY (id_ccy) REFERENCES currencies(id_ccy),
+
+    UNIQUE (uuid),
+    UNIQUE (id_org, id_aum_snapshot)
+);
+
+CREATE INDEX IF NOT EXISTS idx_aum_rows_org ON aum_rows(id_org);
+CREATE INDEX IF NOT EXISTS idx_aum_rows_snapshot ON aum_rows(id_org, id_aum_snapshot);
+CREATE INDEX IF NOT EXISTS idx_aum_rows_fund ON aum_rows(id_org, id_f);
+CREATE INDEX IF NOT EXISTS idx_aum_rows_as_of_date ON aum_rows(id_org, as_of_date);
+
+
+-- ============================================================
 -- EXPIRIES
 -- ============================================================
 
@@ -169,6 +255,11 @@ CREATE TABLE IF NOT EXISTS expiries (
 
     id_exp_snapshot     BIGINT      NOT NULL,
 
+    id_spe              BIGINT,
+    id_leg              BIGINT,
+    ice_trade_id        TEXT,
+    ice_leg_id          TEXT,
+
     trade_type          TEXT,
     underlying_asset    TEXT,
     termination_date    DATE,
@@ -200,6 +291,10 @@ CREATE TABLE IF NOT EXISTS expiries (
     CONSTRAINT fk_exp_row_snapshot FOREIGN KEY (id_org, id_exp_snapshot)
         REFERENCES expiries_snapshots(id_org, id_exp_snapshot)
         ON DELETE CASCADE,
+    CONSTRAINT fk_exp_spe FOREIGN KEY (id_org, id_spe)
+        REFERENCES trade_spe(id_org, id_spe),
+    CONSTRAINT fk_exp_leg FOREIGN KEY (id_org, id_leg)
+        REFERENCES trade_disc_legs(id_org, id_leg),
     CONSTRAINT fk_exp_row_ac FOREIGN KEY (id_ac) REFERENCES asset_classes(id_ac),
     CONSTRAINT fk_exp_row_ctpy FOREIGN KEY (id_org, id_ctpy) REFERENCES counterparties(id_org, id_ctpy),
     CONSTRAINT fk_exp_row_ccy FOREIGN KEY (id_ccy) REFERENCES currencies(id_ccy),
@@ -210,6 +305,14 @@ CREATE TABLE IF NOT EXISTS expiries (
 );
 CREATE INDEX IF NOT EXISTS idx_expiries_org ON expiries(id_org);
 CREATE INDEX IF NOT EXISTS idx_expiries_snapshot ON expiries(id_org, id_exp_snapshot);
+CREATE INDEX IF NOT EXISTS idx_expiries_spe ON expiries(id_org, id_spe)
+    WHERE id_spe IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_expiries_leg ON expiries(id_org, id_leg)
+    WHERE id_leg IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_expiries_ice_trade_id ON expiries(id_org, ice_trade_id)
+    WHERE ice_trade_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_expiries_ice_leg_id ON expiries(id_org, ice_leg_id)
+    WHERE ice_leg_id IS NOT NULL;
 
 
 -- ============================================================
@@ -399,6 +502,11 @@ CREATE TABLE IF NOT EXISTS leverages_per_trade (
     id_leverage_trade_snapshot BIGINT      NOT NULL,
     id_f                       BIGINT      NOT NULL,
 
+    id_spe                     BIGINT,
+    id_leg                     BIGINT,
+    ice_trade_id               TEXT,
+    ice_leg_id                 TEXT,
+
     as_of_ts                   TIMESTAMPTZ,
     trade_id                   BIGINT,
     id_ac                      BIGINT,
@@ -424,6 +532,10 @@ CREATE TABLE IF NOT EXISTS leverages_per_trade (
     CONSTRAINT fk_leverages_trade_row_snapshot FOREIGN KEY (id_org, id_leverage_trade_snapshot)
         REFERENCES leverages_per_trade_snapshots(id_org, id_leverage_trade_snapshot)
         ON DELETE CASCADE,
+    CONSTRAINT fk_lev_trade_spe FOREIGN KEY (id_org, id_spe)
+        REFERENCES trade_spe(id_org, id_spe),
+    CONSTRAINT fk_lev_trade_leg FOREIGN KEY (id_org, id_leg)
+        REFERENCES trade_disc_legs(id_org, id_leg),
     CONSTRAINT fk_leverages_trade_row_fund FOREIGN KEY (id_org, id_f) REFERENCES funds(id_org, id_f),
     CONSTRAINT fk_leverages_trade_row_ac FOREIGN KEY (id_ac) REFERENCES asset_classes(id_ac),
     CONSTRAINT fk_leverages_trade_row_ctpy FOREIGN KEY (id_org, id_ctpy) REFERENCES counterparties(id_org, id_ctpy),
@@ -439,6 +551,14 @@ CREATE INDEX IF NOT EXISTS idx_leverages_trade_rows_ac ON leverages_per_trade(id
 CREATE INDEX IF NOT EXISTS idx_leverages_trade_rows_ctpy ON leverages_per_trade(id_org, id_ctpy);
 CREATE INDEX IF NOT EXISTS idx_leverages_trade_rows_trade_id ON leverages_per_trade(id_org, trade_id);
 CREATE INDEX IF NOT EXISTS idx_leverages_trade_rows_as_of ON leverages_per_trade(id_org, as_of_ts);
+CREATE INDEX IF NOT EXISTS idx_lev_trade_spe ON leverages_per_trade(id_org, id_spe)
+    WHERE id_spe IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_lev_trade_leg ON leverages_per_trade(id_org, id_leg)
+    WHERE id_leg IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_lev_trade_ice_id ON leverages_per_trade(id_org, ice_trade_id)
+    WHERE ice_trade_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_lev_trade_ice_leg_id ON leverages_per_trade(id_org, ice_leg_id)
+    WHERE ice_leg_id IS NOT NULL;
 
 
 -- ============================================================

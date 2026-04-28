@@ -371,6 +371,8 @@ CREATE INDEX IF NOT EXISTS idx_expiries_ice_leg_id
 
 ALTER TABLE leverages_per_trade
     ADD COLUMN IF NOT EXISTS id_spe BIGINT,
+    ADD COLUMN IF NOT EXISTS id_leg BIGINT,
+    ADD COLUMN IF NOT EXISTS ice_leg_id TEXT,
     ADD COLUMN IF NOT EXISTS ice_trade_id TEXT;
 
 ALTER TABLE leverages_per_trade
@@ -380,12 +382,25 @@ ALTER TABLE leverages_per_trade
     FOREIGN KEY (id_org, id_spe)
     REFERENCES trade_spe(id_org, id_spe);
 
+ALTER TABLE leverages_per_trade
+    DROP CONSTRAINT IF EXISTS fk_lev_trade_leg;
+ALTER TABLE leverages_per_trade
+    ADD CONSTRAINT fk_lev_trade_leg
+    FOREIGN KEY (id_org, id_leg)
+    REFERENCES trade_disc_legs(id_org, id_leg);
+
 CREATE INDEX IF NOT EXISTS idx_lev_trade_spe
     ON leverages_per_trade(id_org, id_spe)
     WHERE id_spe IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_lev_trade_leg
+    ON leverages_per_trade(id_org, id_leg)
+    WHERE id_leg IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_lev_trade_ice_id
     ON leverages_per_trade(id_org, ice_trade_id)
     WHERE ice_trade_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_lev_trade_ice_leg_id
+    ON leverages_per_trade(id_org, ice_leg_id)
+    WHERE ice_leg_id IS NOT NULL;
 
 
 -- ============================================================

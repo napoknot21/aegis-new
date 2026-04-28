@@ -187,7 +187,7 @@ The reporting model repeats one main pattern:
 | `leverages_snapshots` | Header for leverage summary loads. | Intraday dataset; linked to `ingestion_runs`. |
 | `leverages` | Single leverage summary row under one snapshot. | One row per snapshot after hardening. |
 | `leverages_per_trade_snapshots` | Header for leverage-by-trade loads. | Intraday dataset; linked to `ingestion_runs`. |
-| `leverages_per_trade` | Trade-level leverage rows. | Usually one row per `trade_id` within snapshot; also references asset class, optional counterparty, and optionally `trade_spe` plus raw ICE trade id. |
+| `leverages_per_trade` | Trade-level leverage rows. | Usually one row per `trade_id` within snapshot; also references asset class, optional counterparty, and optionally `trade_spe` / `trade_disc_legs` plus raw ICE ids. |
 | `leverages_per_underlying_snapshots` | Header for leverage-by-underlying loads. | Intraday dataset; linked to `ingestion_runs`. |
 | `leverages_per_underlying` | Underlying-level leverage rows. | One row per underlying within a snapshot in practice; stores leverage and exposure metrics. |
 | `long_short_delta_snapshots` | Header for long/short delta loads. | Intraday dataset; linked to `ingestion_runs`. |
@@ -228,7 +228,7 @@ These are not just design intentions. They are backed by migrations and pgTAP te
 - Deleting a DISC leg cascades to its optional child rows.
 - `fx_rates` allows only one row per currency pair/date/source, treating NULL source as a real unique value.
 - Ingestion payloads and trade leg diffs are aligned to the parent run by organisation and fund; deleting the run clears the payload run link and cascades diff rows.
-- Expiries and leverage-per-trade rows can link back to the trade referential.
+- Expiries and leverage-per-trade rows can link back to `trade_spe` and `trade_disc_legs`.
 - `SIMM` allows multiple retries per fund/day, but only one official snapshot per fund/day.
 - Snapshot rows are aligned with their parent header using composite org-aware FKs.
 - `nav_estimated` and `leverages` are enforced as one-row-per-snapshot datasets.

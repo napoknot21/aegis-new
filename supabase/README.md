@@ -98,13 +98,14 @@ Examples:
 
 - `20260409020000_init_shared_reference.sql`
 - `20260410000100_add_ingestion_runs.sql`
-- `20260414000200_add_aum_snapshots.sql`
+- `20260428000100_add_ingestion_pipeline.sql`
 
 Logical placement notes:
 
 - `currencies`, `asset_classes`, `countries`, `cities`, `fx_rates`, and `quotes` are global shared reference tables created in `20260409020000_init_shared_reference.sql`.
 - `20260420000100_add_login_quotes.sql` only seeds initial login quotes.
-- `aum_snapshots` and `aum_rows` are part of the reporting snapshot layer, even though they were introduced later in `20260414000200_add_aum_snapshots.sql`.
+- `aum_snapshots` and `aum_rows` are daily reporting snapshot tables created in `20260409020300_init_reporting_snapshots.sql`.
+- `20260414000200_add_aum_snapshots.sql` is now a no-op placement note kept for the historical migration slot.
 
 ## Seed Data
 

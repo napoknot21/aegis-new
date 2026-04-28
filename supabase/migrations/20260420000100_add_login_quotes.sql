@@ -1,41 +1,14 @@
 -- ============================================================
--- AEGIS - official migration: login quotes system reference
+-- AEGIS - official migration: login quotes seed data
 --
 -- Scope:
---   - quotes (for login page display)
+--   - seed quotes for login page display
 --
 -- Notes:
 --   - These quotes are displayed on the login page
+--   - quotes is created in 20260409020000_init_shared_reference.sql
 --   - Not tenant-scoped, shared across all users
 -- ============================================================
-
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
-
--- ============================================================
--- QUOTES
--- ============================================================
-
-CREATE TABLE IF NOT EXISTS quotes (
-
-    id_quote        BIGSERIAL   PRIMARY KEY,
-    uuid            UUID        NOT NULL DEFAULT uuid_generate_v4(),
-
-    quote           TEXT        NOT NULL,
-    author          TEXT        NOT NULL,
-
-    is_active       BOOLEAN     NOT NULL DEFAULT TRUE,
-    sort_order      INTEGER     NOT NULL DEFAULT 100,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    UNIQUE (uuid),
-    UNIQUE (quote, author)
-
-);
-
-CREATE INDEX IF NOT EXISTS idx_quotes_active ON quotes(is_active);
-CREATE INDEX IF NOT EXISTS idx_quotes_sort_order ON quotes(sort_order);
 
 
 -- ============================================================

@@ -5,18 +5,25 @@
 -- Scope:
 --   - simm_snapshots
 --   - simm_snapshot_rows
+
 --   - expiries_snapshots
 --   - expiries
+
 --   - nav_estimated_snapshots
 --   - nav_estimated
+
 --   - leverages_snapshots
 --   - leverages
+
 --   - leverages_per_underlying_snapshots
 --   - leverages_per_underlying
+
 --   - long_short_delta_snapshots
 --   - long_short_delta
+
 --   - counterparty_concentration_snapshots
 --   - counterparty_concentration
+
 --   - leverages_per_trade_snapshots
 --   - leverages_per_trade
 --

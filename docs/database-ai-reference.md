@@ -1,6 +1,6 @@
 # Aegis Database Reference For Claude
 
-Date: 2026-04-17
+Date: 2026-04-28
 
 ## Purpose
 
@@ -49,7 +49,7 @@ Implications:
 
 - Tenant boundary is `organisation`, carried by `id_org`.
 - Tenant-scoped relations usually include composite keys such as `(id_org, id_f)` or `(id_org, id_user)`.
-- Shared references are global, mainly `currencies` and `asset_classes`.
+- Shared references are global, mainly `currencies`, `asset_classes`, `countries`, `cities`, `fx_rates`, and `quotes`.
 - Most tables use a numeric primary key for operations plus a secondary `uuid` for external stability.
 - The main trade aggregate is `trades` + `trade_disc` + `trade_disc_legs` + optional one-to-one child tables per leg.
 - Reporting datasets follow a repeated pattern: one snapshot header table plus one row table.
@@ -59,12 +59,12 @@ Implications:
 
 ## Schema Size
 
-Committed migrations currently create 47 tables, grouped into these families:
+Committed migrations currently create 55 tables, grouped into these families:
 
-1. Shared references: 2 tables
+1. Shared references: 6 tables
 2. Tenant and authz foundation: 11 tables
 3. Trade core: 15 tables
-4. Reporting orchestration: 1 table
+4. Ingestion orchestration and audit: 5 tables
 5. Reporting snapshots: 18 tables
 
 ## Family 1: Shared Reference Tables
@@ -75,6 +75,10 @@ These tables are global and not tenant-scoped.
 | --- | --- | --- |
 | `currencies` | Master currency list used across funds, trade legs, premiums, settlements, expiries, and AUM. | PK `id_ccy`; unique `code`; seeded locally; has `is_active`, `sort_order`, `updated_at`. |
 | `asset_classes` | Master asset class list used across trade legs and several reporting datasets. | PK `id_ac`; unique `code`, `name`, `ice_code`; seeded locally; has `is_active`, `sort_order`, `updated_at`. |
+| `countries` | Global country reference. | PK `id_country`; unique ISO2/ISO3 codes; intended for office/city normalization and future regulatory/geographic classification. |
+| `cities` | Global city reference. | PK `id_city`; FK to `countries`; unique by country, city name, and optional admin area; offices can reference it through `id_city`. |
+| `fx_rates` | Daily FX rates between currency pairs. | Global table; FKs to `currencies`; one rate per pair/date/source, including a single NULL-source row. |
+| `quotes` | Login page display quotes. | Global display reference created with the shared reference tables; initial quote rows are seeded by a later migration. |
 
 ## Family 2: Tenant And Authz Foundation
 
@@ -83,7 +87,7 @@ These tables define the tenant model and the future authorization model. Authent
 | Table | Purpose | Main keys and notes |
 | --- | --- | --- |
 | `organisations` | Root tenant table. Most business tables ultimately hang off this. | PK `id_org`; unique `code`; tenant root. |
-| `offices` | Office locations inside an organisation. | FK to `organisations`; unique office `code` and `name` per org. |
+| `offices` | Office locations inside an organisation. | FK to `organisations`; optional FK to `cities`; legacy free-text `city` and `country_code` remain available; unique office `code` and `name` per org. |
 | `departments` | Department catalog per organisation. | FK to `organisations`; unique `code` and `name` per org. |
 | `office_departments` | Mapping between offices and departments. | Composite org-aware FKs to `offices` and `departments`; supports `is_primary`. |
 | `users` | Application user directory per organisation. | Stores `entra_oid`, `email`, `display_name`; unique email and Entra OID per org. |
@@ -124,7 +128,7 @@ This is the most concrete business model in the current app.
 | `trade_spe` | Shared identity anchor for a trade subtree. | Minimal table used as a stable trade root by org. |
 | `trades` | Trade header table. | References `trade_spe`, `trade_types`, `funds`, and optional booking users; holds `status`. |
 | `trade_disc` | DISC-specific detail row for a trade. | One row per DISC trade; references `books`, optional `portfolio`, `counterparties`, and `trade_disc_labels`. |
-| `trade_disc_legs` | Legs under a DISC trade. | One-to-many from `trade_disc`; references `asset_classes` and `currencies`; unique `leg_id` per trade. |
+| `trade_disc_legs` | Legs under a DISC trade. | One-to-many from `trade_disc`; references `asset_classes` and `currencies`; unique `leg_id` per trade; carries lifecycle status and first/last seen timestamps. |
 | `trade_disc_instruments` | Optional instrument details for one leg. | One-to-one with a leg; cascades on leg delete. |
 | `trade_disc_fields` | Optional field-level details for one leg. | One-to-one with a leg; contains `buysell`, dates, notionals, payout currency. |
 | `trade_disc_premiums` | Optional premium details for one leg. | One-to-one with a leg; amount, currency, date, markup, total. |
@@ -133,22 +137,28 @@ This is the most concrete business model in the current app.
 Important notes for this family:
 
 - `trade_disc` is keyed by `id_spe`, so it behaves like a trade subtype table.
-- `trade_disc(id_org, id_spe)` is explicitly tied back to `trades(id_org, id_spe)` by the hardening migration.
+- `trade_disc(id_org, id_spe)` is explicitly tied back to `trades(id_org, id_spe)`; the older direct FK to `trade_spe` has been removed.
+- `trade_disc` has `created_at` and `updated_at`, with an update trigger.
 - The schema currently supports DISC end to end.
 - `ADV` exists in the trade type catalog, but there is no separate advisory trade aggregate yet.
 - The pgTAP tests verify that one DISC trade can own multiple legs and that each optional child table stays one-to-one with a leg.
 
-## Family 4: Reporting Orchestration
+## Family 4: Ingestion Orchestration And Audit
 
 | Table | Purpose | Main keys and notes |
 | --- | --- | --- |
-| `ingestion_runs` | Parent record for one logical intraday reporting batch. | Linked to one org and fund; child intraday snapshot headers reference `(id_org, id_f, id_run)`; deleting a run cascades to its child headers and rows. |
+| `ingestion_sources` | Tenant-scoped catalogue of ingestion methods. | Examples include `ice_excel_multi`, `ice_libapi`, and `ice_excel_mono`; `ingestion_runs` can point to it through `id_source`. |
+| `ingestion_runs` | Parent record for one logical intraday reporting batch. | Linked to one org and fund; child intraday snapshot headers reference `(id_org, id_f, id_run)`; payloads and diff logs reference `(id_org, id_f, id_ingestion_run)`. |
+| `raw_ingestion_payloads` | Raw source payload metadata. | Supports both file payloads and API responses; linked to org, fund, source, and optionally an ingestion run; deleting a run clears only the run link. |
+| `ingestion_field_mappings` | Source-to-target field mapping rules. | One mapping per org/source/target table/target column; supports direct, lookup, computed, and constant transforms. |
+| `trade_leg_diffs` | Per-run trade leg diff audit trail. | Records new, modified, unchanged, and disappeared legs; links to ingestion run and optionally `trade_disc_legs`; cascades with the run. |
 
 Important notes:
 
 - `run_type` is currently `reporting_snapshot` or `reporting_snapshot_partial`.
 - This table does not govern daily `SIMM`.
 - This table does not currently govern `AUM`.
+- The ingestion schema handles three source shapes: three-file ICE Excel, ICE LibAPI JSON responses, and future single-file ICE Excel.
 
 ## Family 5: Reporting Snapshots
 
@@ -171,13 +181,13 @@ The reporting model repeats one main pattern:
 | Table | Purpose | Main keys and notes |
 | --- | --- | --- |
 | `expiries_snapshots` | Header for an expiries file import. | Intraday dataset; linked to `ingestion_runs`; uses `snapshot_date` and `snapshot_ts`. |
-| `expiries` | Expiries rows under one snapshot. | One row per imported structure or position; unique by `row_hash` within snapshot. |
+| `expiries` | Expiries rows under one snapshot. | One row per imported structure or position; unique by `row_hash` within snapshot; can link back to `trade_spe` and `trade_disc_legs` while retaining raw ICE identifiers. |
 | `nav_estimated_snapshots` | Header for estimated NAV snapshot loads. | Intraday dataset; linked to `ingestion_runs`; supports official flag. |
 | `nav_estimated` | Single NAV row under one snapshot. | One row per snapshot after hardening. |
 | `leverages_snapshots` | Header for leverage summary loads. | Intraday dataset; linked to `ingestion_runs`. |
 | `leverages` | Single leverage summary row under one snapshot. | One row per snapshot after hardening. |
 | `leverages_per_trade_snapshots` | Header for leverage-by-trade loads. | Intraday dataset; linked to `ingestion_runs`. |
-| `leverages_per_trade` | Trade-level leverage rows. | Usually one row per `trade_id` within snapshot; also references asset class and optional counterparty. |
+| `leverages_per_trade` | Trade-level leverage rows. | Usually one row per `trade_id` within snapshot; also references asset class, optional counterparty, and optionally `trade_spe` plus raw ICE trade id. |
 | `leverages_per_underlying_snapshots` | Header for leverage-by-underlying loads. | Intraday dataset; linked to `ingestion_runs`. |
 | `leverages_per_underlying` | Underlying-level leverage rows. | One row per underlying within a snapshot in practice; stores leverage and exposure metrics. |
 | `long_short_delta_snapshots` | Header for long/short delta loads. | Intraday dataset; linked to `ingestion_runs`. |
@@ -210,9 +220,15 @@ These are not just design intentions. They are backed by migrations and pgTAP te
 - One user can have only one active primary rank.
 - One fund can have only one active primary office access row.
 - `trade_disc` must match an existing `trades` header through `(id_org, id_spe)`.
+- `trade_disc` no longer has the older direct FK to `trade_spe`.
+- `trade_disc.ice_trade_id` is unique per organisation when present.
+- `trade_disc_legs` tracks lifecycle state and status change time.
 - `trade_disc_fields.buysell` is normalized to `Buy` or `Sell`.
 - Optional DISC leg child tables stay one-to-one with a leg.
 - Deleting a DISC leg cascades to its optional child rows.
+- `fx_rates` allows only one row per currency pair/date/source, treating NULL source as a real unique value.
+- Ingestion payloads and trade leg diffs are aligned to the parent run by organisation and fund; deleting the run clears the payload run link and cascades diff rows.
+- Expiries and leverage-per-trade rows can link back to the trade referential.
 - `SIMM` allows multiple retries per fund/day, but only one official snapshot per fund/day.
 - Snapshot rows are aligned with their parent header using composite org-aware FKs.
 - `nav_estimated` and `leverages` are enforced as one-row-per-snapshot datasets.
@@ -286,6 +302,8 @@ It does not seed tenant-specific rows like:
 - `books`
 - `counterparties`
 - `trade_disc_labels`
+
+The ingestion pipeline migration seeds the three standard `ingestion_sources` only for organisations that already exist when the migration runs. New organisation setup still needs to insert source rows.
 
 So empty responses on tenant-scoped endpoints do not automatically mean the schema is missing. They may simply mean org-specific data has not been inserted yet.
 

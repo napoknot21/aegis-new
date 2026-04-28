@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS offices (
     name            TEXT        NOT NULL,
     city            TEXT,
     country_code    TEXT,
+    id_city         BIGINT,
     timezone_name   TEXT,
 
     is_active       BOOLEAN     NOT NULL DEFAULT TRUE,
@@ -66,6 +67,7 @@ CREATE TABLE IF NOT EXISTS offices (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT fk_office_org FOREIGN KEY (id_org) REFERENCES organisations(id_org),
+    CONSTRAINT fk_office_city FOREIGN KEY (id_city) REFERENCES cities(id_city),
 
     UNIQUE (uuid),
     UNIQUE (id_org, id_off),
@@ -75,6 +77,7 @@ CREATE TABLE IF NOT EXISTS offices (
 );
 
 CREATE INDEX IF NOT EXISTS idx_offices_org ON offices(id_org);
+CREATE INDEX IF NOT EXISTS idx_offices_city ON offices(id_city);
 
 
 -- ============================================================

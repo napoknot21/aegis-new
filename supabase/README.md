@@ -100,6 +100,12 @@ Examples:
 - `20260410000100_add_ingestion_runs.sql`
 - `20260414000200_add_aum_snapshots.sql`
 
+Logical placement notes:
+
+- `currencies`, `asset_classes`, `countries`, `cities`, `fx_rates`, and `quotes` are global shared reference tables created in `20260409020000_init_shared_reference.sql`.
+- `20260420000100_add_login_quotes.sql` only seeds initial login quotes.
+- `aum_snapshots` and `aum_rows` are part of the reporting snapshot layer, even though they were introduced later in `20260414000200_add_aum_snapshots.sql`.
+
 ## Seed Data
 
 `seed.sql` is for local, non-sensitive data only.
@@ -108,6 +114,7 @@ At the moment, it seeds shared reference data such as:
 
 - `currencies`
 - `asset_classes`
+- initial `quotes`
 
 It does not fully seed organisation-specific business entities such as funds, books, trade labels, or counterparties.
 
@@ -134,6 +141,7 @@ Important points:
 - `ingestion_runs` is the parent record for intraday reporting loads
 - intraday snapshot headers can link back to `ingestion_runs`
 - `simm_snapshots` keeps separate semantics and does not behave like the intraday snapshot families
+- `aum_snapshots` is daily reporting data like SIMM and does not link to `ingestion_runs`
 
 This structure supports datasets such as AUM, SIMM, expiries, leverages, and related reporting tables.
 
